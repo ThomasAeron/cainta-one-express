@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin · Cainta One Express</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="api-config.js"></script>
+<script src="Backend/app-data.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+:root{--navy:#0b1f3a;--navy2:#123253;--blue:#1f72d8;--orange:#f7a93b;--text:#1d2a39;--muted:#64748b;--bg:#eef5fb;--line:#dfe7f1;--green:#17935a;--red:#d8453b}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--text);line-height:1.5;display:flex;height:100vh;overflow:hidden}
+a{color:inherit;text-decoration:none}
+nav{width:220px;background:var(--navy);color:#fff;padding:18px 0;flex-shrink:0;display:flex;flex-direction:column;gap:4px}
+#side[hidden],#app[hidden]{display:none}
+.admin-tabs{display:flex;flex-direction:column;gap:4px}
+.brand{display:flex;gap:10px;align-items:center;padding:0 18px 16px;font-weight:800;border-bottom:1px solid rgba(255,255,255,.12)}
+.brand img{width:36px;height:36px;border-radius:10px}
+nav a,nav button{display:block;width:100%;padding:11px 18px;border:0;background:transparent;color:rgba(255,255,255,.75);text-align:left;font:inherit;cursor:pointer}
+nav a:hover,nav button:hover,nav a.on,nav button.on{background:rgba(255,255,255,.08);color:#fff;border-left:3px solid var(--orange);padding-left:15px}
+nav button:focus-visible,nav a:focus-visible{outline:3px solid var(--orange);outline-offset:-3px}
+.back-link{margin-top:auto}
+main{flex:1;min-width:0;min-height:0;padding:22px 28px 24px;display:flex;flex-direction:column;overflow:hidden}
+.top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px;flex-shrink:0}
+h1{font-size:1.7rem;color:var(--navy);font-weight:700}
+.who{display:flex;gap:10px;align-items:center;color:var(--muted);font-size:.9rem}
+.btn{border:0;border-radius:8px;padding:8px 14px;background:var(--blue);color:#fff;font:inherit;font-weight:700;cursor:pointer}
+.btn.alt{background:#fff;color:var(--navy);border:1px solid var(--line)}.btn.sm{padding:5px 10px;font-size:.8rem}.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid rgba(31,114,216,.35)}
+.banner{background:#fff6e5;border:1px solid #f3d9a4;color:#7a5200;border-radius:10px;padding:10px 14px;margin-bottom:16px;font-size:.88rem}
+.grid{display:grid;gap:20px}.stats{grid-template-columns:repeat(4,1fr);margin-bottom:16px}.two{grid-template-columns:2fr 1fr;margin-bottom:0;align-items:start}
+.admin-views{flex:1;min-height:0;overflow:hidden}
+.view-panel{height:100%;overflow:auto;overscroll-behavior:contain}
+.view-panel[hidden]{display:none}
+.dashboard-charts .card{min-height:0}
+.card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:20px;box-shadow:0 8px 22px rgba(18,50,83,.06)}
+.card h2{font-size:1.05rem;color:var(--blue);margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.tag{font-size:.7rem;font-weight:700;padding:2px 8px;border-radius:999px;background:#e6f6ee;color:var(--green)}.tag.demo{background:#fff1d6;color:#8a5a00}
+.k{font-size:.78rem;color:var(--muted);text-transform:uppercase}.v{font-size:1.8rem;font-weight:800;color:var(--navy)}
+.bar{margin:12px 0}.bar div:first-child{display:flex;justify-content:space-between;font-size:.84rem;color:var(--muted);margin-bottom:3px}
+.track{height:9px;background:#e8eff7;border-radius:6px;overflow:hidden}.fill{height:100%;background:var(--blue);border-radius:6px}
+.scroll{overflow-x:auto}table{width:100%;border-collapse:collapse;min-width:560px}
+th{text-align:left;font-size:.78rem;color:var(--muted);padding:8px 10px;background:#f4f8fc}td{padding:9px 10px;border-bottom:1px solid var(--line);font-size:.9rem}
+.pill{padding:2px 10px;border-radius:12px;font-size:.75rem;font-weight:700;color:#fff;background:#8a9bb0}
+.pill.delivered{background:var(--green)}.pill.transit{background:var(--blue)}.pill.pending{background:var(--orange);color:var(--navy)}.pill.failed{background:var(--red)}
+svg text{fill:var(--muted);font-size:12px}
+.note{list-style:none;font-size:.88rem}.note li{padding:8px 0;border-bottom:1px solid var(--line)}.note small{color:var(--muted);display:block}
+#gate{max-width:440px;margin:12vh auto;text-align:center}#gate p{color:var(--muted);margin:8px 0 16px}
+dialog{border:0;border-radius:14px;padding:22px;width:min(420px,92vw)}dialog::backdrop{background:rgba(11,31,58,.6)}
+dialog label{display:block;font-size:.84rem;font-weight:700;color:var(--navy);margin:10px 0 3px}
+dialog input,dialog select,dialog textarea{width:100%;padding:9px 11px;border:1px solid #cbd9e6;border-radius:8px;font:inherit}
+#msg{color:var(--red);font-size:.85rem;margin-top:8px;min-height:1.2em}
+.map-layout{display:grid;grid-template-columns:minmax(0,2fr) minmax(230px,1fr);gap:16px;align-items:start}
+.operations-map{height:clamp(280px,calc(100dvh - 430px),460px);min-height:280px;border-radius:10px;background:#e8eff6;overflow:hidden}
+.map-controls{display:flex;flex-wrap:wrap;gap:8px 16px;margin-bottom:12px}
+.map-controls label{display:inline-flex;align-items:center;gap:6px;color:var(--text);font-size:.86rem}
+.map-status{min-height:1.3em;margin:8px 0;color:var(--muted);font-size:.84rem}
+.location-list-container{max-height:clamp(220px,calc(100dvh - 430px),460px);overflow:auto}
+.location-list-container h3{margin:12px 0 4px;color:var(--navy);font-size:.88rem}
+.location-group{list-style:none}
+.location-group li{border-bottom:1px solid var(--line)}
+.location-group button{display:block;width:100%;padding:8px 4px;border:0;background:transparent;text-align:left;font:inherit;cursor:pointer}
+.location-group button:disabled{color:var(--muted);cursor:default}
+.location-group button:not(:disabled):hover{background:#f4f8fc}
+.location-group strong,.location-group small{display:block}
+.location-group strong{font-size:.85rem}
+.location-group small{color:var(--muted);font-size:.76rem}
+.map-legend{display:flex;flex-wrap:wrap;gap:12px;margin:10px 0;color:var(--muted);font-size:.8rem}
+.map-legend span{display:inline-flex;align-items:center;gap:5px}
+.map-dot{width:11px;height:11px;border-radius:50%;background:#2368c4}.map-dot.simulated{background:#8c57c8}.map-dot.restaurant{background:#db7b12}.map-dot.warehouse{background:#17935a}
+.map-disclosure{margin-top:10px;padding:9px 11px;border-radius:8px;background:#fff7e8;color:#76500a;font-size:.8rem}
+.simulated-badge{display:inline-block;margin:2px 0;padding:1px 6px;border-radius:999px;background:#fff1d6;color:#805000;font-size:.7rem;font-weight:800;letter-spacing:.04em}
+.demo-controls{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:0 0 12px}
+.demo-controls select{max-width:230px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:#fff;font:inherit}
+.demo-controls progress{width:min(180px,100%);height:12px;accent-color:var(--blue)}
+.demo-status{flex-basis:100%;min-height:1.2em;color:var(--muted);font-size:.82rem}
+.admin-chat{position:fixed;right:24px;bottom:24px;z-index:1100}
+.admin-chat[hidden],.admin-chat-panel[hidden],.admin-chat-toggle[hidden]{display:none}
+.admin-chat-panel{position:absolute;right:0;bottom:64px;display:grid;grid-template-rows:auto minmax(0,1fr) auto auto;width:min(390px,calc(100vw - 32px));height:min(560px,calc(100vh - 112px));min-height:300px;overflow:hidden;border:1px solid #d7e3ef;border-radius:18px;background:#fff;box-shadow:0 20px 55px rgba(8,36,90,.24)}
+.admin-chat-header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;background:var(--navy);color:#fff}
+.admin-chat-brand{display:flex;align-items:center;gap:10px}
+.admin-chat-avatar{width:42px;height:42px;flex:0 0 42px;border-radius:50%;object-fit:cover;background:#fff}
+.admin-chat-header h2{font-size:1rem}
+.admin-chat-header p{margin-top:3px;color:rgba(255,255,255,.78);font-size:.76rem}
+.admin-chat-close{border:0;background:transparent;color:#fff;font-size:1.5rem;cursor:pointer}
+.admin-chat-messages{display:flex;flex-direction:column;gap:10px;overflow-y:auto;padding:14px;background:#f5f8fc}
+.admin-chat-message{max-width:90%;margin:0;padding:10px 12px;border:1px solid #e0e9f2;border-radius:14px;border-bottom-left-radius:4px;background:#fff;overflow-wrap:anywhere;font-size:.88rem}
+.admin-chat-message.is-user{align-self:flex-end;border:0;border-bottom-right-radius:4px;background:var(--blue);color:#fff}
+.admin-chat-error{margin:0;padding:0 14px;color:var(--red);font-size:.82rem}
+.admin-chat-form{display:flex;gap:8px;padding:10px 14px 14px}
+.admin-chat-form input{min-width:0;flex:1;padding:10px 12px;border:1px solid #cbd9e6;border-radius:9px;font:inherit}
+.admin-chat .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.admin-chat-toggle{min-height:50px;padding:0 18px;border:0;border-radius:999px;background:var(--navy);color:#fff;box-shadow:0 8px 24px rgba(8,36,90,.28);font:inherit;font-weight:700;cursor:pointer}
+.admin-chat button:focus-visible,.admin-chat input:focus-visible{outline:3px solid #ffbf47;outline-offset:3px}
+@media(max-width:480px){.admin-chat{right:16px;bottom:16px}.admin-chat-panel{bottom:62px;height:min(560px,calc(100vh - 94px))}}
+@media(max-width:1000px){.stats{grid-template-columns:repeat(2,1fr)}.two{grid-template-columns:1fr}}
+@media(max-width:900px){.map-layout{grid-template-columns:1fr}.location-list-container{max-height:180px}}
+@media(max-width:700px){
+  nav{position:fixed;z-index:1000;left:0;right:0;bottom:0;width:100%;height:68px;padding:5px 4px;display:flex;flex-direction:row;align-items:stretch;justify-content:space-around;gap:2px;box-shadow:0 -4px 18px rgba(11,31,58,.18)}
+  .admin-tabs{flex:1;min-width:0;flex-direction:row;gap:2px}
+  .brand,.back-link{display:none}
+  nav a,nav button{flex:1;min-width:0;padding:7px 2px;display:flex;align-items:center;justify-content:center;text-align:center;font-size:.68rem;line-height:1.15}
+  nav a:hover,nav button:hover,nav a.on,nav button.on{padding-left:2px;border-left:0;border-top:3px solid var(--orange)}
+  main{padding:12px 12px 82px}
+  .top{margin-bottom:10px}
+  h1{font-size:1.35rem}
+  .stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:12px}
+  .card{padding:14px}
+  .two{gap:12px}
+  .operations-map{height:38dvh;min-height:220px}
+  .location-list-container{max-height:150px}
+  .admin-chat{right:12px;bottom:82px}
+  .admin-chat-panel{bottom:62px;height:min(560px,calc(100dvh - 160px))}
+}
+</style>
+</head>
+<body>
+<section id="gate" class="card" hidden>
+  <h2 style="justify-content:center;font-size:1.4rem;color:var(--navy)">Sign in to open the admin panel</h2>
+  <p>Use your Cainta One Express account. Admin data is only returned by the server to authorized accounts.</p>
+  <a class="btn" href="account.html?mode=signin">Sign In</a>
+</section>
+
+<nav id="side" hidden aria-label="Admin">
+  <div class="brand"><img src="favicon.svg" alt=""><span>Cainta One<br>Admin</span></div>
+  <div class="admin-tabs" role="tablist" aria-label="Admin sections">
+    <button class="on" type="button" id="nav-dashboard" data-admin-view="dashboard" role="tab" aria-selected="true" aria-controls="panel-dashboard">Dashboard</button>
+    <button type="button" id="nav-map" data-admin-view="map" role="tab" aria-selected="false" aria-controls="panel-map" tabindex="-1">Operations map</button>
+    <button type="button" id="nav-shipments" data-admin-view="shipments" role="tab" aria-selected="false" aria-controls="panel-shipments" tabindex="-1">Shipments</button>
+    <button type="button" id="nav-catalog" data-admin-view="catalog" role="tab" aria-selected="false" aria-controls="panel-catalog" tabindex="-1">Catalog</button>
+    <button type="button" id="nav-notifications" data-admin-view="notifications" role="tab" aria-selected="false" aria-controls="panel-notifications" tabindex="-1">Notifications</button>
+  </div>
+  <a class="back-link" href="main.html">← Back to website</a>
+</nav>
+
+<main id="app" hidden>
+  <div class="top" id="top">
+    <h1 id="view-title">Dashboard</h1>
+    <div class="who"><span id="who"></span><button class="btn alt sm" id="out">Sign out</button></div>
+  </div>
+  <div class="banner" id="banner" hidden></div>
+
+  <div class="admin-views">
+    <section class="view-panel" id="panel-dashboard" role="tabpanel" aria-labelledby="nav-dashboard" tabindex="0">
+      <section class="grid stats" aria-label="Key numbers">
+        <div class="card"><div class="k">Products listed</div><div class="v" id="s1">–</div></div>
+        <div class="card"><div class="k">Shipments</div><div class="v" id="s2">–</div></div>
+        <div class="card"><div class="k">Delivered</div><div class="v" id="s3">–</div></div>
+        <div class="card"><div class="k">Unread notifications</div><div class="v" id="s4">–</div></div>
+      </section>
+      <section class="grid two dashboard-charts">
+        <div class="card"><h2>Shipments per month <span class="tag" id="t-chart"></span></h2><svg id="chart" viewBox="0 0 700 280" width="100%" role="img" aria-label="Shipments per month"></svg></div>
+        <div class="card"><h2>Top merchants <span class="tag" id="t-merch"></span></h2><div id="merch"></div></div>
+      </section>
+    </section>
+
+    <section class="view-panel" id="panel-map" role="tabpanel" aria-labelledby="nav-map" tabindex="0" hidden>
+      <section class="card" aria-labelledby="operations-map-title">
+        <h2 id="operations-map-title">Operations map <span class="tag" id="map-refresh-state">Loading</span></h2>
+        <div class="demo-controls" aria-label="Temporary route preview">
+          <label for="demo-restaurant">Restaurant</label>
+          <select id="demo-restaurant"></select>
+          <button class="btn alt" type="button" id="demo-choose-destination">Choose customer pin</button>
+          <button class="btn" type="button" id="demo-start" disabled>Preview route</button>
+          <button class="btn alt" type="button" id="demo-clear">Clear preview</button>
+          <progress id="demo-progress" max="100" value="0" aria-label="Route preview progress"></progress>
+          <p class="demo-status" id="demo-status" role="status" aria-live="polite">Choose a restaurant and customer pin to preview a route.</p>
+        </div>
+        <div class="map-controls" role="group" aria-label="Map layers">
+          <label><input id="map-show-drivers" type="checkbox" checked> Drivers</label>
+          <label><input id="map-show-restaurants" type="checkbox" checked> Restaurants</label>
+          <label><input id="map-show-warehouses" type="checkbox" checked> Warehouses</label>
+        </div>
+        <div class="map-layout">
+          <div>
+            <div id="operations-map" class="operations-map" role="region" aria-label="Interactive driver and facility map"></div>
+            <div class="map-legend" aria-label="Map legend">
+              <span><i class="map-dot"></i> Saved driver locations</span>
+              <span><i class="map-dot simulated"></i> Fleet riders</span>
+              <span><i class="map-dot restaurant"></i> Restaurants</span>
+              <span><i class="map-dot warehouse"></i> Warehouses</span>
+            </div>
+          </div>
+          <div>
+            <p id="map-status" class="map-status" role="status" aria-live="polite">Loading location data…</p>
+            <div id="operations-location-list" class="location-list-container" aria-label="Mapped locations"></div>
+          </div>
+        </div>
+        <p class="map-disclosure"><strong>About this map:</strong> Purple fleet markers show simulated rider names, vehicles, statuses, and estimated positions; they do not represent real employees or live GPS. Route previews are temporary and do not create shipment records. Saved driver locations come from shipment reports and may be stale.</p>
+      </section>
+    </section>
+
+    <section class="view-panel" id="panel-shipments" role="tabpanel" aria-labelledby="nav-shipments" tabindex="0" hidden>
+      <section class="card">
+        <h2>Shipments <span class="tag" id="t-ship"></span></h2>
+        <div class="scroll"><table><thead><tr><th>Tracking</th><th>Destination</th><th>Status</th><th>Created</th><th>Payment</th><th>Action</th></tr></thead><tbody id="ship"></tbody></table></div>
+      </section>
+    </section>
+
+    <section class="view-panel" id="panel-catalog" role="tabpanel" aria-labelledby="nav-catalog" tabindex="0" hidden>
+      <section class="card">
+        <h2>Catalog <span><span class="tag" id="t-cat"></span> <button class="btn sm" id="add">+ Add Bazaar listing</button></span></h2>
+        <div class="scroll"><table><thead><tr><th>Item</th><th>Category</th><th>Merchant</th><th>Price</th></tr></thead><tbody id="cat"></tbody></table></div>
+      </section>
+    </section>
+
+    <section class="view-panel" id="panel-notifications" role="tabpanel" aria-labelledby="nav-notifications" tabindex="0" hidden>
+      <section class="card"><h2>Notifications <span class="tag" id="t-note"></span></h2><ul class="note" id="notes"></ul></section>
+    </section>
+  </div>
+</main>
+
+<dialog id="dlg">
+  <form id="f" method="dialog">
+    <h2 style="color:var(--navy)">Add Bazaar listing</h2>
+    <label for="f-seller">Seller</label><input id="f-seller" required maxlength="50">
+    <label for="f-name">Product name</label><input id="f-name" required maxlength="80">
+    <label for="f-cat">Category</label>
+    <select id="f-cat" required><option>Clothing</option><option>Shoes</option><option>Bags</option><option>Accessories</option><option>Home</option><option>Electronics</option><option>Other</option></select>
+    <label for="f-price">Price (PHP)</label><input id="f-price" type="number" min="1" step="0.01" required>
+    <label for="f-stock">Stock</label><input id="f-stock" type="number" min="1" step="1" required>
+    <label for="f-desc">Description</label><textarea id="f-desc" rows="2" maxlength="500" required></textarea>
+    <p id="msg" role="status"></p>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px"><button type="button" class="btn alt" id="cancel">Cancel</button><button class="btn" id="save">Publish product</button></div>
+  </form>
+</dialog>
+
+<section class="admin-chat" id="admin-chat" aria-label="Delivery and deals assistant">
+  <div class="admin-chat-panel" id="admin-chat-panel" role="dialog" aria-labelledby="admin-chat-title" hidden>
+    <header class="admin-chat-header">
+      <div class="admin-chat-brand">
+        <img class="admin-chat-avatar" src="/rotom.png" width="42" height="42" alt="">
+        <div>
+        <h2 id="admin-chat-title">Rotom Dex</h2>
+        <p>Delivery &amp; deals assistant · Bzzt!</p>
+        </div>
+      </div>
+      <button type="button" class="admin-chat-close" id="admin-chat-close" aria-label="Close chat">×</button>
+    </header>
+    <div class="admin-chat-messages" id="admin-chat-messages" role="log" aria-live="polite" aria-labelledby="admin-chat-title"></div>
+    <p class="admin-chat-error" id="admin-chat-error" role="status" aria-live="polite"></p>
+    <form class="admin-chat-form" id="admin-chat-form">
+      <label for="admin-chat-input" class="sr-only">Ask about products or delivery</label>
+      <input id="admin-chat-input" type="text" maxlength="240" placeholder="Ask about products or delivery..." autocomplete="off" required>
+      <button class="btn" type="submit">Send</button>
+    </form>
+  </div>
+  <button type="button" class="admin-chat-toggle" id="admin-chat-toggle" aria-expanded="false" aria-controls="admin-chat-panel" hidden>⚡ Ask Rotom Dex</button>
+</section>
+
+<script>
+/* ---- Same session + API conventions as script.js on the website ---- */
+const SESSION_KEY = 'coe-demo-session-v1';
+const readSession = () => { try { return JSON.parse(localStorage.getItem(SESSION_KEY) || 'null'); } catch { return null; } };
+const session = readSession();
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+const peso = (n) => n == null ? '–' : 'PHP ' + Number(n).toLocaleString('en-PH', { minimumFractionDigits: 2 });
+
+async function api(path, options = {}) {
+  const res = await fetch(`${window.CAINTA_API_BASE}${path}`, { ...options, headers: { 'Content-Type': 'application/json', ...(session?.token ? { Authorization: `Bearer ${session.token}` } : {}), ...(options.headers || {}) } });
+  if (!res.ok) {
+    let message = `HTTP ${res.status}`;
+    try { const j = await res.json(); message = j.error || j.message || j.detail || message; } catch {}
+    const err = new Error(message); err.status = res.status; throw err;
+  }
+  return res.json();
+}
+
+const adminChatPanel = $('admin-chat-panel');
+const adminChatToggle = $('admin-chat-toggle');
+const adminChatInput = $('admin-chat-input');
+const adminChatMessages = $('admin-chat-messages');
+const adminChatError = $('admin-chat-error');
+const adminChatHistory = [];
+function appendAdminChatMessage(message, sender = 'assistant') {
+  const bubble = document.createElement('p');
+  bubble.className = `admin-chat-message${sender === 'user' ? ' is-user' : ''}`;
+  bubble.textContent = message;
+  adminChatMessages.append(bubble);
+  adminChatMessages.scrollTop = adminChatMessages.scrollHeight;
+  return bubble;
+}
+adminChatToggle.addEventListener('click', () => {
+  const opening = adminChatPanel.hidden;
+  adminChatPanel.hidden = !opening;
+  adminChatToggle.setAttribute('aria-expanded', String(opening));
+  if (opening) adminChatInput.focus();
+});
+$('admin-chat-close').addEventListener('click', () => {
+  adminChatPanel.hidden = true;
+  adminChatToggle.setAttribute('aria-expanded', 'false');
+  adminChatToggle.focus();
+});
+appendAdminChatMessage('Bzzt! Rotom Dex is ready to help with products, prices, and delivery questions.');
+$('admin-chat-form').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const question = adminChatInput.value.trim();
+  if (!question) return;
+  adminChatError.textContent = '';
+  appendAdminChatMessage(question, 'user');
+  adminChatInput.value = '';
+  const submitButton = $('admin-chat-form').querySelector('[type="submit"]');
+  submitButton.disabled = true;
+  const replyBubble = appendAdminChatMessage('Rotom is thinking… zzzt');
+  try {
+    const context = {
+      company: { name: 'Cainta One Express', location: 'Cainta, Rizal', phone: '09566753142', email: 'cainta1express@gmail.com' },
+      items: items.slice(0, 40).map((item) => ({
+        service: item.service || 'Online Bazaar',
+        name: item.name,
+        price: Number(item.price) || null,
+        place: item.merchant || item.seller || item.category || null
+      })),
+      latestDelivery: null
+    };
+    const data = await api('/api/chat', {
+      method: 'POST',
+      body: JSON.stringify({
+        messages: [...adminChatHistory.slice(-10), { role: 'user', content: question }],
+        context
+      })
+    });
+    if (!data?.reply) throw new Error('The assistant returned an empty reply.');
+    replyBubble.textContent = data.reply;
+    adminChatHistory.push({ role: 'user', content: question }, { role: 'assistant', content: data.reply });
+  } catch (error) {
+    replyBubble.remove();
+    adminChatError.textContent = `Could not get a reply: ${error.message}`;
+  } finally {
+    submitButton.disabled = false;
+    adminChatInput.focus();
+  }
+});
+
+let operationsMap = null;
+let operationsMapData = null;
+let operationsMapFitted = false;
+let demoLayer = null;
+let demoTimer = null;
+let demoDestination = null;
+let selectingDemoDestination = false;
+let demoDriverMarker = null;
+const demoAreaBounds = { minLat: 14.547851, maxLat: 14.6365632, minLon: 121.0946307, maxLon: 121.1450774 };
+const operationsLayers = {
+  drivers: null,
+  restaurants: null,
+  warehouses: null
+};
+const operationsMapCheckboxes = {
+  drivers: $('map-show-drivers'),
+  restaurants: $('map-show-restaurants'),
+  warehouses: $('map-show-warehouses')
+};
+let operationsMapShown = false;
+const adminViewButtons = Array.from(document.querySelectorAll('[data-admin-view]'));
+const adminViewTitles = {
+  dashboard: 'Dashboard',
+  map: 'Operations map',
+  shipments: 'Shipments',
+  catalog: 'Catalog',
+  notifications: 'Notifications'
+};
+
+function activateAdminView(viewName) {
+  const selectedButton = adminViewButtons.find((button) => button.dataset.adminView === viewName);
+  const selectedPanel = $(`panel-${viewName}`);
+  if (!selectedButton || !selectedPanel) return;
+
+  adminViewButtons.forEach((button) => {
+    const active = button === selectedButton;
+    button.classList.toggle('on', active);
+    button.setAttribute('aria-selected', String(active));
+    button.tabIndex = active ? 0 : -1;
+    $(`panel-${button.dataset.adminView}`).hidden = !active;
+  });
+  $('view-title').textContent = adminViewTitles[viewName];
+
+  if (viewName === 'map') {
+    window.requestAnimationFrame(() => {
+      if (!operationsMap) return;
+      operationsMap.invalidateSize();
+      if (!operationsMapShown && operationsMapData) {
+        operationsMapFitted = false;
+        renderOperationsMap(operationsMapData);
+        operationsMapShown = true;
+      }
+    });
+  }
+}
+
+adminViewButtons.forEach((button, index) => {
+  button.addEventListener('click', () => activateAdminView(button.dataset.adminView));
+  button.addEventListener('keydown', (event) => {
+    const key = event.key;
+    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(key)) return;
+    event.preventDefault();
+    const nextIndex = key === 'Home'
+      ? 0
+      : key === 'End'
+        ? adminViewButtons.length - 1
+        : (index + (key === 'ArrowRight' ? 1 : -1) + adminViewButtons.length) % adminViewButtons.length;
+    const nextButton = adminViewButtons[nextIndex];
+    activateAdminView(nextButton.dataset.adminView);
+    nextButton.focus();
+  });
+});
+
+function initializeOperationsMap() {
+  if (operationsMap) return operationsMap;
+  if (!window.L) {
+    $('map-status').textContent = 'The map library did not load. Location details are still available in the list.';
+    return null;
+  }
+  operationsMap = window.L.map('operations-map').setView([14.58, 121.11], 13);
+  window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    maxZoom: 19
+  }).addTo(operationsMap);
+  Object.keys(operationsLayers).forEach((key) => {
+    operationsLayers[key] = window.L.layerGroup().addTo(operationsMap);
+    operationsMapCheckboxes[key].addEventListener('change', () => {
+      if (operationsMapCheckboxes[key].checked) {
+        operationsLayers[key].addTo(operationsMap);
+        if (key === 'drivers') demoLayer?.addTo(operationsMap);
+      } else {
+        operationsMap.removeLayer(operationsLayers[key]);
+        if (key === 'drivers' && demoLayer) operationsMap.removeLayer(demoLayer);
+      }
+    });
+  });
+  demoLayer = window.L.layerGroup().addTo(operationsMap);
+  operationsMap.on('click', (event) => {
+    if (!selectingDemoDestination) return;
+    selectingDemoDestination = false;
+    const { lat, lng } = event.latlng;
+    if (lat < demoAreaBounds.minLat || lat > demoAreaBounds.maxLat ||
+        lng < demoAreaBounds.minLon || lng > demoAreaBounds.maxLon) {
+      $('demo-status').textContent = 'That pin is outside the Cainta service-area bounds. Choose another spot on the map.';
+      return;
+    }
+    demoDestination = { lat, lon: lng };
+    demoLayer.clearLayers();
+    window.L.circleMarker([lat, lng], {
+      radius: 9, color: '#fff', weight: 2, fillColor: '#bb3d32', fillOpacity: 0.95
+    }).bindPopup('Demo customer drop-off').addTo(demoLayer);
+    $('demo-status').textContent = `Customer pin set: ${lat.toFixed(5)}, ${lng.toFixed(5)}. Start the demo when ready.`;
+    $('demo-start').disabled = false;
+  });
+  $('demo-restaurant').addEventListener('change', updateDemoAvailability);
+  return operationsMap;
+}
+
+function formatLocationAge(recordedAt) {
+  if (!recordedAt) return 'No location report';
+  const timestamp = new Date(recordedAt).getTime();
+  if (!Number.isFinite(timestamp)) return 'Last report time unavailable';
+  const ageSeconds = Math.max(0, Math.floor((Date.now() - timestamp) / 1000));
+  const ageText = ageSeconds < 60
+    ? 'just now'
+    : ageSeconds < 3600
+      ? `${Math.floor(ageSeconds / 60)} min ago`
+      : `${Math.floor(ageSeconds / 3600)} hr ago`;
+  return ageSeconds > 120 ? `Last reported ${ageText} · possibly stale` : `Last reported ${ageText}`;
+}
+
+function createLocationPopup(title, details, updatedAt) {
+  const content = document.createElement('div');
+  const heading = document.createElement('strong');
+  heading.textContent = title;
+  content.append(heading);
+  [details, updatedAt].filter(Boolean).forEach((text) => {
+    const line = document.createElement('div');
+    line.textContent = text;
+    content.append(line);
+  });
+  return content;
+}
+
+function renderOperationsMap(data) {
+  initializeOperationsMap();
+  operationsMapData = data;
+  Object.values(operationsLayers).forEach((layer) => layer?.clearLayers());
+  const list = $('operations-location-list');
+  list.replaceChildren();
+  const bounds = [];
+  let markerCount = 0;
+
+  const addSection = (title) => {
+    const heading = document.createElement('h3');
+    heading.textContent = title;
+    const entries = document.createElement('ul');
+    entries.className = 'location-group';
+    list.append(heading, entries);
+    return entries;
+  };
+  const driverList = addSection('Drivers');
+  const restaurantList = addSection('Restaurants');
+  const warehouseList = addSection('Warehouses');
+
+  const addLocation = ({ type, title, details, lat, lon, updatedAt, listRoot, simulated = false }) => {
+    const latitude = Number(lat);
+    const longitude = Number(lon);
+    const hasCoordinates = Number.isFinite(latitude) && Number.isFinite(longitude);
+    const item = document.createElement('li');
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.disabled = !hasCoordinates || !operationsMap;
+    const name = document.createElement('strong');
+    name.textContent = title;
+    const description = document.createElement('small');
+    description.textContent = [details, updatedAt].filter(Boolean).join(' · ');
+    button.append(name, description);
+    item.append(button);
+    listRoot.append(item);
+
+    if (!hasCoordinates || !operationsMap) return;
+    const colors = {
+      drivers: '#2368c4',
+      restaurants: '#db7b12',
+      warehouses: '#17935a'
+    };
+    const marker = window.L.circleMarker([latitude, longitude], {
+      radius: type === 'drivers' ? (simulated ? 10 : 9) : 8,
+      color: '#fff',
+      weight: simulated ? 3 : 2,
+      fillColor: simulated ? '#8c57c8' : colors[type],
+      fillOpacity: 0.95
+    }).bindPopup(createLocationPopup(title, details, updatedAt));
+    marker.addTo(operationsLayers[type]);
+    bounds.push([latitude, longitude]);
+    markerCount += 1;
+    button.addEventListener('click', () => {
+      operationsMap.setView(marker.getLatLng(), 16, { animate: true });
+      marker.openPopup();
+    });
+  };
+
+  (Array.isArray(data.drivers) ? data.drivers : []).forEach((driver) => {
+    const hasLocation = driver.lat != null && driver.lon != null;
+    addLocation({
+      type: 'drivers',
+      title: driver.name || 'Driver',
+      details: hasLocation
+        ? `${driver.tracking_number || 'Assigned shipment'} · ${driver.notes || driver.status || 'Location reported'}`
+        : 'No active shipment location reported',
+      lat: driver.lat,
+      lon: driver.lon,
+      updatedAt: hasLocation ? formatLocationAge(driver.recorded_at) : '',
+      listRoot: driverList
+    });
+  });
+  (Array.isArray(data.simulatedDrivers) ? data.simulatedDrivers : []).forEach((driver) => {
+    addLocation({
+      type: 'drivers',
+      title: `Unassigned shipment · ${driver.tracking_number || 'Active delivery'}`,
+      details: driver.notes || driver.status || 'Simulated delivery in progress',
+      lat: driver.lat,
+      lon: driver.lon,
+      updatedAt: formatLocationAge(driver.recorded_at),
+      listRoot: driverList
+    });
+  });
+
+  if (!data.drivers.length) {
+    const note = document.createElement('li');
+    const text = document.createElement('small');
+    text.textContent = 'No driver accounts configured.';
+    note.append(text);
+    driverList.append(note);
+  }
+
+  const interpolate = (from, to, ratio) => {
+    const progress = Math.min(1, Math.max(0, ratio));
+    return [from[0] + (to[0] - from[0]) * progress, from[1] + (to[1] - from[1]) * progress];
+  };
+  (Array.isArray(data.simulatedFleet) ? data.simulatedFleet : []).forEach((driver) => {
+    const hasPlan = driver.shipment_id && driver.driver_depart_at && driver.delivery_eta;
+    const origin = [Number(driver.driver_origin_lat ?? driver.current_lat), Number(driver.driver_origin_lon ?? driver.current_lon)];
+    const restaurant = [Number(driver.restaurant_lat), Number(driver.restaurant_lon)];
+    const destination = [Number(driver.destination_lat), Number(driver.destination_lon)];
+    const now = Date.now();
+    const departureAt = new Date(driver.driver_depart_at).getTime();
+    const arrivalAt = new Date(driver.driver_arrival_at).getTime();
+    const pickupAt = new Date(driver.pickup_eta).getTime();
+    const deliveryAt = new Date(driver.delivery_eta).getTime();
+    let position = [Number(driver.current_lat), Number(driver.current_lon)];
+    let state = new Date(driver.available_at).getTime() > now
+      ? 'Reserved for a queued order'
+      : 'Available';
+    if (hasPlan && now < departureAt) {
+      position = origin;
+      state = `Queued for ${new Date(departureAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`;
+    } else if (hasPlan && now < arrivalAt) {
+      position = interpolate(origin, restaurant, (now - departureAt) / Math.max(1, arrivalAt - departureAt));
+      state = `Heading to ${driver.restaurant_name}`;
+    } else if (hasPlan && now < pickupAt) {
+      position = restaurant;
+      state = `Waiting for ${driver.restaurant_name} pickup`;
+    } else if (hasPlan && now < deliveryAt) {
+      position = interpolate(restaurant, destination, (now - pickupAt) / Math.max(1, deliveryAt - pickupAt));
+      state = `Delivering ${driver.tracking_number}`;
+    }
+    const title = `${driver.display_name} · ${driver.driver_code}`;
+    const details = `${driver.vehicle_model} · ${driver.vehicle_plate} · ${state}${driver.tracking_number ? ` · ${driver.tracking_number}` : ''}`;
+    addLocation({
+      type: 'drivers',
+      title,
+      details,
+      lat: position[0],
+      lon: position[1],
+      updatedAt: '',
+      listRoot: driverList,
+      simulated: true
+    });
+  });
+
+  const restaurants = window.CaintaOneData?.images?.restaurants;
+  (Array.isArray(restaurants) ? restaurants : []).forEach((restaurant) => {
+    addLocation({
+      type: 'restaurants',
+      title: restaurant.name,
+      details: `${restaurant.area || 'Cainta'} · ${restaurant.address || 'Restaurant pickup location'}`,
+      lat: restaurant.lat,
+      lon: restaurant.lon,
+      listRoot: restaurantList
+    });
+  });
+
+  (Array.isArray(data.warehouses) ? data.warehouses : []).forEach((warehouse) => {
+    addLocation({
+      type: 'warehouses',
+      title: `${warehouse.code} · ${warehouse.name}`,
+      details: [warehouse.address, warehouse.area].filter(Boolean).join(', ') || 'Warehouse address',
+      lat: warehouse.lat,
+      lon: warehouse.lon,
+      listRoot: warehouseList
+    });
+  });
+
+  if (operationsMap && bounds.length && !operationsMapFitted) {
+    operationsMap.fitBounds(bounds, { padding: [24, 24], maxZoom: 15 });
+    operationsMapFitted = true;
+    window.setTimeout(() => operationsMap?.invalidateSize(), 200);
+  }
+  populateDemoRestaurants();
+  const updatedTime = new Date(data.generatedAt || Date.now()).toLocaleTimeString();
+  $('map-status').textContent = `${markerCount} mapped locations, including ${(data.simulatedFleet || []).length} fleet riders · refreshed ${updatedTime}.`;
+  $('map-refresh-state').textContent = `Updated ${updatedTime}`;
+}
+
+async function loadOperationsMap() {
+  try {
+    const data = await api('/api/shipments/operations-map');
+    if (!data || !Array.isArray(data.warehouses) || !Array.isArray(data.drivers) ||
+        !Array.isArray(data.simulatedDrivers) || !Array.isArray(data.simulatedFleet)) {
+      throw new Error('The server returned incomplete map data.');
+    }
+    renderOperationsMap(data);
+  } catch (error) {
+    if (error.status === 401) {
+      localStorage.removeItem(SESSION_KEY);
+      location.reload();
+      return;
+    }
+    $('map-status').textContent = `Could not load operations locations: ${error.message}`;
+    $('map-refresh-state').textContent = 'Unavailable';
+    $('map-refresh-state').classList.add('demo');
+  }
+}
+
+function populateDemoRestaurants() {
+  const select = $('demo-restaurant');
+  if (select.options.length) return;
+  const restaurants = window.CaintaOneData?.images?.restaurants;
+  (Array.isArray(restaurants) ? restaurants : []).forEach((restaurant, index) => {
+    const option = document.createElement('option');
+    option.value = String(index);
+    option.textContent = restaurant.name;
+    select.append(option);
+  });
+  updateDemoAvailability();
+}
+
+function updateDemoAvailability() {
+  const hasRestaurants = Boolean(window.CaintaOneData?.images?.restaurants?.length);
+  $('demo-start').disabled = !hasRestaurants || !demoDestination || !operationsMapData;
+}
+
+function clearDemoDelivery(message = 'Route preview cleared. No shipment records were created.') {
+  if (demoTimer) window.clearInterval(demoTimer);
+  demoTimer = null;
+  selectingDemoDestination = false;
+  demoDriverMarker = null;
+  demoLayer?.clearLayers();
+  demoDestination = null;
+  $('demo-progress').value = 0;
+  $('demo-start').disabled = true;
+  $('demo-status').textContent = message;
+}
+
+function runDemoDelivery() {
+  const restaurants = window.CaintaOneData?.images?.restaurants || [];
+  const restaurant = restaurants[Number($('demo-restaurant').value)];
+  const dispatch = operationsMapData?.warehouses?.find((warehouse) =>
+    warehouse.code === 'WH-JCT-01' && Number.isFinite(Number(warehouse.lat)) && Number.isFinite(Number(warehouse.lon))
+  ) || operationsMapData?.warehouses?.find((warehouse) =>
+    Number.isFinite(Number(warehouse.lat)) && Number.isFinite(Number(warehouse.lon))
+  );
+  if (!operationsMap || !demoLayer || !restaurant || !dispatch || !demoDestination) {
+    $('demo-status').textContent = 'A restaurant, saved warehouse location, and customer pin are required for a route preview.';
+    return;
+  }
+
+  const selectedDestination = { ...demoDestination };
+  clearDemoDelivery('Starting temporary route preview…');
+  demoDestination = selectedDestination;
+  updateDemoAvailability();
+  const origin = [Number(dispatch.lat), Number(dispatch.lon)];
+  const pickup = [Number(restaurant.lat), Number(restaurant.lon)];
+  const destination = [selectedDestination.lat, selectedDestination.lon];
+  if (![...origin, ...pickup, ...destination].every(Number.isFinite)) {
+    $('demo-status').textContent = 'The selected locations have invalid coordinates.';
+    return;
+  }
+
+  const interpolate = (from, to, count) => Array.from({ length: count }, (_, index) => [
+    from[0] + ((to[0] - from[0]) * index) / (count - 1),
+    from[1] + ((to[1] - from[1]) * index) / (count - 1)
+  ]);
+  const approach = interpolate(origin, pickup, 9);
+  const delivery = interpolate(pickup, destination, 13);
+  demoLayer.clearLayers();
+  window.L.polyline(approach, { color: '#e58916', weight: 4, dashArray: '7 8' }).addTo(demoLayer);
+  window.L.polyline(delivery, { color: '#2368c4', weight: 5 }).addTo(demoLayer);
+  window.L.circleMarker(pickup, {
+    radius: 8, color: '#fff', weight: 2, fillColor: '#db7b12', fillOpacity: 1
+  }).bindPopup(`Restaurant · ${restaurant.name}`).addTo(demoLayer);
+  window.L.circleMarker(destination, {
+    radius: 8, color: '#fff', weight: 2, fillColor: '#bb3d32', fillOpacity: 1
+  }).bindPopup('Route preview drop-off').addTo(demoLayer);
+  demoDriverMarker = window.L.circleMarker(origin, {
+    radius: 10, color: '#fff', weight: 3, fillColor: '#2368c4', fillOpacity: 1
+  }).bindPopup('Temporary route preview · no live GPS').addTo(demoLayer);
+  operationsMap.fitBounds(window.L.latLngBounds([origin, pickup, destination]), { padding: [28, 28], maxZoom: 15 });
+
+  const approachTicks = 5;
+  const preparationTicks = 6;
+  const pickupTick = approachTicks + preparationTicks;
+  const lastTick = pickupTick + 12;
+  let tick = 0;
+  const update = () => {
+    let point;
+    let status;
+    if (tick < approachTicks) {
+      const progress = tick / (approachTicks - 1);
+      point = approach[Math.round(progress * (approach.length - 1))];
+      status = `Rider heading to ${restaurant.name} from ${dispatch.name}.`;
+    } else if (tick < pickupTick) {
+      point = pickup;
+      status = `Food is being prepared at ${restaurant.name}; the rider is waiting.`;
+    } else {
+      const progress = Math.min((tick - pickupTick) / 12, 1);
+      point = delivery[Math.round(progress * (delivery.length - 1))];
+      status = tick === pickupTick
+        ? `Rider picked up the order from ${restaurant.name}.`
+        : tick < lastTick
+          ? 'Rider is on the way to the customer.'
+          : 'Route preview complete. No shipment or location record was created.';
+    }
+    demoDriverMarker?.setLatLng(point);
+    $('demo-status').textContent = status;
+    $('demo-progress').value = Math.round((tick / lastTick) * 100);
+    if (tick >= lastTick) {
+      window.clearInterval(demoTimer);
+      demoTimer = null;
+      return;
+    }
+    tick += 1;
+  };
+  update();
+  demoTimer = window.setInterval(update, 750);
+}
+
+$('demo-choose-destination').addEventListener('click', () => {
+  if (!operationsMap) {
+    $('demo-status').textContent = 'The interactive map is unavailable.';
+    return;
+  }
+  selectingDemoDestination = true;
+  $('demo-status').textContent = 'Click inside the Cainta map to place a customer pin for the route preview.';
+});
+$('demo-start').addEventListener('click', runDemoDelivery);
+$('demo-clear').addEventListener('click', () => clearDemoDelivery());
+
+/* ---- Demo data, shown only when an endpoint is missing or unreachable ---- */
+const DEMO_SHIPMENTS = [
+  { id: 'demo-1', tracking_number: 'COE-DEMO-0001', destination: 'San Isidro', status: 'in_transit', created_at: '2026-10-18' },
+  { id: 'demo-2', tracking_number: 'COE-DEMO-0002', destination: 'Brookside', status: 'delivered', created_at: '2026-10-17' },
+  { id: 'demo-3', tracking_number: 'COE-DEMO-0003', destination: 'Karangalan', status: 'pending', created_at: '2026-10-19' },
+  { id: 'demo-4', tracking_number: 'COE-DEMO-0004', destination: 'Junction', status: 'delivered', created_at: '2026-09-28' }
+];
+const setTag = (id, live) => { const t = $(id); t.textContent = live ? 'Live' : 'Demo'; t.className = 'tag' + (live ? '' : ' demo'); };
+const notes = [];
+async function tryLoad(path, fallback, tagId) {
+  try { const d = await api(path); setTag(tagId, true); return d; }
+  catch (e) { if (e.status === 401) throw e; notes.push(`${path}: ${e.message}`); setTag(tagId, false); return fallback; }
+}
+
+let items = [], shipments = [];
+const statusClass = (s) => /deliver/i.test(s) ? 'delivered' : /transit|picked/i.test(s) ? 'transit' : /fail|cancel/i.test(s) ? 'failed' : 'pending';
+const NEXT = { pending: 'picked_up', created: 'picked_up', picked_up: 'in_transit', in_transit: 'delivered' };
+
+function render() {
+  const delivered = shipments.filter((s) => /deliver/i.test(s.status)).length;
+  $('s1').textContent = items.length; $('s2').textContent = shipments.length; $('s3').textContent = delivered;
+
+  // Top merchants (real data from /api/items)
+  const counts = {}; items.forEach((i) => { const m = i.merchant || 'Unknown'; counts[m] = (counts[m] || 0) + 1; });
+  const top = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 5), max = top[0]?.[1] || 1;
+  $('merch').innerHTML = top.map(([m, n]) => `<div class="bar"><div><span>${esc(m)}</span><span>${n} items</span></div><div class="track"><div class="fill" style="width:${n / max * 100}%"></div></div></div>`).join('') || '<p class="k">No items yet</p>';
+
+  // Shipments table
+  $('ship').innerHTML = shipments.map((s) => {
+    const key = String(s.status || 'pending').toLowerCase(), next = NEXT[key];
+    const destination = [s.destination_line, s.destination_area].filter(Boolean).join(', ')
+      || s.destination || s.destination_addr || '–';
+    const paymentText = s.payment_method
+      ? `${s.payment_method.toUpperCase()} · PHP ${Number(s.amount_paid || 0).toFixed(2)} paid`
+      : '—';
+    return `<tr><td><b>${esc(s.tracking_number || s.id)}</b></td><td>${esc(destination)}</td><td><span class="pill ${statusClass(key)}">${esc(key.replace('_', ' '))}</span></td><td>${esc(String(s.created_at || '').slice(0, 10))}</td><td>${paymentText}</td><td>${next ? `<button class="btn sm" data-id="${esc(s.id)}" data-next="${next}">Mark ${next.replace('_', ' ')}</button>` : '–'}</td></tr>`;
+  }).join('') || '<tr><td colspan="6">No shipments yet. Orders placed on the website appear here.</td></tr>';
+  $('cat').innerHTML = items.slice(0, 25).map((i) => `<tr><td>${esc(i.name)}</td><td>${esc(i.category)}</td><td>${esc(i.merchant || '–')}</td><td>${peso(i.price)}</td></tr>`).join('');
+
+  // Chart: shipments per month
+  const byMonth = Array(12).fill(0); shipments.forEach((s) => { const d = new Date(s.created_at); if (!isNaN(d)) byMonth[d.getMonth()]++; });
+  const W = 700, H = 280, L = 40, B = 30, T = 14, R = 14, m = Math.max(4, ...byMonth);
+  const x = (i) => L + i * (W - L - R) / 11, y = (v) => T + (H - T - B) * (1 - v / m);
+  const mon = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  let g = [0, .5, 1].map((p) => `<line x1="${L}" x2="${W - R}" y1="${y(m * p)}" y2="${y(m * p)}" stroke="#e3ebf4"/><text x="${L - 6}" y="${y(m * p) + 4}" text-anchor="end">${Math.round(m * p)}</text>`).join('');
+  const pts = byMonth.map((v, i) => `${x(i)},${y(v)}`).join(' ');
+  g += `<polygon points="${x(0)},${y(0)} ${pts} ${x(11)},${y(0)}" fill="#1f72d8" opacity=".25"/><polyline points="${pts}" fill="none" stroke="#1f72d8" stroke-width="2.5"/>`;
+  g += byMonth.map((v, i) => `<circle cx="${x(i)}" cy="${y(v)}" r="3.5" fill="#1f72d8"><title>${mon[i]}: ${v}</title></circle>${i % 2 ? '' : `<text x="${x(i)}" y="${H - 8}" text-anchor="middle">${mon[i]}</text>`}`).join('');
+  $('chart').innerHTML = g;
+}
+
+async function load() {
+  items = await tryLoad('/api/items?limit=500', [], 't-cat');
+  const sh = await tryLoad('/api/shipments', DEMO_SHIPMENTS, 't-ship');
+  shipments = Array.isArray(sh) ? sh : (sh.items || DEMO_SHIPMENTS);
+  setTag('t-chart', $('t-ship').textContent === 'Live'); setTag('t-merch', $('t-cat').textContent === 'Live');
+  const n = await tryLoad('/api/notifications?limit=20', [], 't-note');
+  $('s4').textContent = n.filter((x) => x.read === false || x.is_read === false || x.read_at == null).length;
+  $('notes').innerHTML = n.map((x) => `<li><b>${esc(x.title)}</b><small>${esc(x.body)}</small></li>`).join('') || '<li>No notifications.</li>';
+  const b = $('banner');
+  if (notes.length) { b.hidden = false; b.textContent = 'Some panels show demo data because these requests failed: ' + notes.join(' · '); } else b.hidden = true;
+  render();
+  await loadOperationsMap();
+}
+
+$('ship').addEventListener('click', async (e) => {
+  const btn = e.target.closest('button[data-id]'); if (!btn) return;
+  if (btn.dataset.id.startsWith('demo-')) { const s = shipments.find((x) => x.id === btn.dataset.id); s.status = btn.dataset.next; render(); return; }
+  btn.disabled = true;
+  try { await api(`/api/shipments/${encodeURIComponent(btn.dataset.id)}/advance`, { method: 'POST', body: JSON.stringify({ event_type: btn.dataset.next, notes: 'Updated from admin panel', lat: null, lon: null }) }); await load(); }
+  catch (err) { alert('Could not update the shipment: ' + err.message); btn.disabled = false; }
+});
+
+$('add').onclick = () => { $('msg').textContent = ''; $('f-seller').value ||= session?.name || ''; $('dlg').showModal(); };
+$('cancel').onclick = () => $('dlg').close();
+$('f').addEventListener('submit', async (e) => {
+  e.preventDefault(); $('save').disabled = true; $('msg').textContent = 'Publishing…';
+  try {
+    await api('/api/items/bazaar-listing', { method: 'POST', body: JSON.stringify({ seller: $('f-seller').value.trim(), name: $('f-name').value.trim(), category: $('f-cat').value, price: Number($('f-price').value), stock: Number($('f-stock').value), description: $('f-desc').value.trim() }) });
+    $('dlg').close(); $('f').reset(); await load();
+  } catch (err) { $('msg').textContent = err.message; } finally { $('save').disabled = false; }
+});
+
+$('out').onclick = () => { localStorage.removeItem(SESSION_KEY); location.href = 'main.html'; };
+
+(async function init() {
+  if (!session?.token) { $('gate').hidden = false; return; }
+
+  let me;
+  try {
+    me = await api('/api/auth/me');
+  } catch (e) {
+    if (e.status === 401) {
+      localStorage.removeItem(SESSION_KEY);
+      $('gate').hidden = false;
+      return;
+    }
+    throw e;
+  }
+
+  // Check role. Only admin or staff can enter the admin panel.
+  const allowedRoles = ['admin', 'staff'];
+  const hasAccess = me.roles?.some(r => allowedRoles.includes(r));
+
+  if (!hasAccess) {
+    // Show the gate with a permission-denied message.
+    const gate = $('gate');
+    gate.hidden = false;
+    gate.innerHTML = `
+      <h2 style="justify-content:center;font-size:1.4rem;color:var(--navy)">Access restricted</h2>
+      <p>You need an admin or staff account to open this panel.</p>
+      <p style="margin-top:8px;color:var(--muted);font-size:.85rem">
+        Signed in as ${esc(session.email)} (${esc(me.roles?.join(', ') || 'no role')})
+      </p>
+      <a class="btn" href="main.html">Back to website</a>
+      <a class="btn alt" href="account.html" style="margin-left:8px">Switch account</a>
+    `;
+    return;
+  }
+
+  $('who').textContent = session.name || session.email;
+  $('side').hidden = false;
+  $('app').hidden = false;
+  $('admin-chat-toggle').hidden = false;
+
+  try {
+    await load();
+    window.setInterval(loadOperationsMap, 15_000);
+  }
+  catch (e) {
+    if (e.status === 401) {
+      localStorage.removeItem(SESSION_KEY);
+      location.reload();
+    }
+  }
+})();
+</script>
+</body>
+</html>

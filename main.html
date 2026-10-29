@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cainta One Express</title>
+    <meta
+      name="description"
+      content="Cainta One Express offers fast Food Delivery, Clothing Delivery, and Moving services in Cainta, Rizal."
+    />
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="api-config.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
+    <script src="Backend/app-data.js" defer></script>
+    <script src="script.js" defer></script>
+  </head>
+
+  <body>
+    <!-- Live animated background (flat blue delivery theme) -->
+    <div class="bg-live" aria-hidden="true">
+      <div class="layer" data-speed="0.05" data-mouse="10">
+        <span class="dot d1"></span><span class="dot d2"></span><span class="dot d3"></span>
+        <span class="dot d4"></span><span class="dot d5"></span><span class="dot d6"></span>
+      </div>
+
+      <!-- dashed delivery routes with flying paper planes -->
+      <div class="layer paths" data-speed="0.10" data-mouse="26">
+        <svg viewBox="0 0 1440 1000" preserveAspectRatio="xMidYMid slice">
+          <g class="route" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="2" stroke-dasharray="8 10" stroke-linecap="round">
+            <path id="r1" d="M-40 220 C 200 40, 380 420, 640 200 S 1000 60, 1480 260"/>
+            <path id="r2" d="M1480 520 C 1200 380, 1000 700, 760 560 S 380 420, -40 640"/>
+            <path id="r3" d="M-40 860 C 260 700, 520 980, 860 820 S 1240 700, 1480 800"/>
+          </g>
+          <g fill="#f7a93b">
+            <path d="M0 0 L30 -9 L9 3 L14 16 Z"><animateMotion dur="16s" repeatCount="indefinite" rotate="auto"><mpath href="#r1"/></animateMotion></path>
+            <path d="M0 0 L26 -8 L8 2 L12 14 Z" fill="#ffd27a"><animateMotion dur="21s" begin="-6s" repeatCount="indefinite" rotate="auto"><mpath href="#r2"/></animateMotion></path>
+            <path d="M0 0 L30 -9 L9 3 L14 16 Z"><animateMotion dur="19s" begin="-11s" repeatCount="indefinite" rotate="auto"><mpath href="#r3"/></animateMotion></path>
+          </g>
+        </svg>
+      </div>
+
+      <!-- white line-art trees + rolling hills -->
+      <div class="layer trees" data-speed="0.03" data-mouse="14">
+        <svg viewBox="0 0 1440 320" preserveAspectRatio="xMidYMax slice">
+          <defs>
+            <symbol id="tree" viewBox="-40 -130 80 130" overflow="visible">
+              <g fill="none" stroke="rgba(255,255,255,.7)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <ellipse cx="0" cy="-82" rx="27" ry="44"/>
+                <path d="M0 0V-38M0 -26L-12 -48M0 -40L12 -62"/>
+              </g>
+            </symbol>
+          </defs>
+          <path d="M0 300 C 180 250, 300 290, 480 292 S 760 250, 960 285 S 1280 250, 1440 280" fill="none" stroke="rgba(255,255,255,.7)" stroke-width="2"/>
+          <g class="sway">
+            <use href="#tree" x="90"   y="270" width="60" height="100"/>
+            <use href="#tree" x="170"  y="282" width="44" height="76"/>
+            <use href="#tree" x="610"  y="286" width="52" height="90"/>
+            <use href="#tree" x="1010" y="276" width="62" height="104"/>
+            <use href="#tree" x="1100" y="280" width="46" height="80"/>
+            <use href="#tree" x="1330" y="270" width="58" height="98"/>
+          </g>
+        </svg>
+      </div>
+    </div>
+
+    <header>
+      <div class="container nav">
+        <a href="#home" class="logo" aria-label="Cainta One Express home">
+          <span class="logo-mark" aria-hidden="true">
+            <img src="favicon.svg" alt="" width="46" height="46" />
+          </span>
+          <span>Cainta One Express</span>
+        </a>
+
+        <nav class="nav-menu" aria-label="Main navigation">
+          <a href="#home">Home</a>
+          <a href="#services">Services</a>
+          <a href="#about">About</a>
+          <a href="#process">Process</a>
+        </nav>
+
+        <div class="nav-actions">
+          <a href="account.html" class="nav-cta" id="nav-sign-in">Sign In</a>
+          <a href="admin.html" class="nav-cta" id="nav-admin" hidden>Admin</a>
+          <div class="user-menu" id="user-menu" hidden>
+            <button type="button" class="nav-cta user-menu-trigger" id="user-menu-trigger" aria-expanded="false" aria-controls="user-menu-panel">
+              <span class="user-avatar" id="user-avatar" aria-hidden="true">U</span>
+              <span id="user-menu-name">Account</span>
+              <span aria-hidden="true">▾</span>
+            </button>
+            <section class="user-menu-panel" id="user-menu-panel" aria-labelledby="user-menu-name" hidden>
+              <h3>Your profile</h3>
+              <p id="user-menu-email" class="user-menu-email"></p>
+              <form id="user-profile-form" class="user-profile-form">
+                <label for="user-profile-name">Name</label>
+                <input id="user-profile-name" name="name" autocomplete="name" required />
+                <label for="user-profile-address">Delivery address</label>
+                <textarea id="user-profile-address" class="delivery-address-input" name="address" rows="2" placeholder="House number, street, barangay (e.g. 12 Ortigas Ave Ext, San Andres, Cainta)" autocomplete="street-address"></textarea>
+                <label class="user-settings-toggle" for="user-order-updates">
+                  <input id="user-order-updates" name="orderUpdates" type="checkbox" />
+                  <span>Order update notifications</span>
+                </label>
+                <button class="btn btn-primary user-profile-save" type="submit">Save profile & settings</button>
+              </form>
+              <p id="user-profile-message" class="user-profile-message" role="status" aria-live="polite"></p>
+              <a class="user-account-link" href="account.html">Account settings</a>
+              <button type="button" class="user-sign-out" id="user-sign-out">Sign Out</button>
+            </section>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero" id="home">
+        <div class="container hero-grid">
+          <div>
+            <span class="eyebrow">Reliable supply chain partner</span>
+            <h1>Smarter logistics for a faster-moving Cainta Rizal.</h1>
+            <p>
+              We help businesses streamline procurement, warehousing, freight operations,
+              and last-mile delivery with efficient, scalable, and dependable solutions.
+            </p>
+
+            <div class="hero-actions">
+              <a href="#services" class="btn btn-secondary">Our Services</a>
+            </div>
+
+            <div class="hero-metrics">
+              <div class="metric">
+                <strong>67K+</strong>
+                <span>Shipments delivered</span>
+              </div>
+              <div class="metric">
+                <strong>96%</strong>
+                <span>On-time performance</span>
+              </div>
+              <div class="metric">
+                <strong>24/7</strong>
+                <span>Operations support</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="hero-visual" aria-label="Express delivery illustration">
+            <svg class="scene" viewBox="0 0 540 460" role="img" aria-label="Delivery truck, courier and app illustration">
+              <!-- tablet / app -->
+              <g class="tablet">
+                <rect x="268" y="14" width="214" height="270" rx="20" fill="#fff" opacity=".96"/>
+                <g fill="#7b61d9">
+                  <rect x="292" y="44" width="92" height="7" rx="3.5"/><rect x="292" y="66" width="76" height="7" rx="3.5"/>
+                  <rect x="292" y="88" width="98" height="7" rx="3.5"/><rect x="292" y="110" width="70" height="7" rx="3.5"/>
+                </g>
+                <rect x="402" y="40" width="52" height="46" rx="8" fill="#ff7a8a"/>
+                <path d="M416 56h6l4 14h16l3-10h-20" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                <rect x="292" y="150" width="46" height="46" rx="9" fill="#1fb89a"/>
+                <rect x="348" y="150" width="46" height="46" rx="9" fill="#27386b"/>
+                <rect x="404" y="150" width="46" height="46" rx="9" fill="#7b61d9"/>
+                <rect x="292" y="212" width="158" height="46" rx="10" fill="#efe9ff"/>
+              </g>
+
+              <!-- floating parcels -->
+              <g class="parcel p1"><rect x="424" y="236" width="64" height="46" rx="6" fill="#f7b44f"/><path d="M456 236v46M424 258h64" stroke="#e08f1f" stroke-width="3"/></g>
+              <g class="parcel p2"><rect x="448" y="320" width="62" height="44" rx="6" fill="#8a6ff0"/><path d="M479 320v44" stroke="#5e44c8" stroke-width="3"/></g>
+
+              <!-- ground -->
+              <path d="M0 392H540" stroke="rgba(255,255,255,.75)" stroke-width="2"/>
+
+              <!-- truck -->
+              <g class="truck">
+                <rect x="70" y="190" width="190" height="150" rx="12" fill="#f7a24a"/>
+                <g transform="rotate(-10 150 255)" fill="#fff" font-family="Arial, Helvetica, sans-serif" font-weight="900" font-size="30" letter-spacing="1">
+                  <text x="86" y="262">EXPRESS</text>
+                </g>
+                <path d="M92 300h92M92 314h64" stroke="rgba(255,255,255,.7)" stroke-width="3" stroke-linecap="round"/>
+                <path d="M12 300 Q12 262 44 252 L70 252 V340 H12 Z" fill="#8a6ff0"/>
+                <path d="M30 266 Q32 262 42 262 L58 262 V296 H28 Z" fill="#dfeaff"/>
+                <rect x="10" y="334" width="256" height="12" rx="6" fill="#5e44c8"/>
+                <g class="wheel"><circle cx="58" cy="352" r="24" fill="#27386b"/><circle cx="58" cy="352" r="11" fill="#cfd8f5"/><path d="M58 341v22M47 352h22" stroke="#27386b" stroke-width="3"/></g>
+                <g class="wheel"><circle cx="206" cy="352" r="24" fill="#27386b"/><circle cx="206" cy="352" r="11" fill="#cfd8f5"/><path d="M206 341v22M195 352h22" stroke="#27386b" stroke-width="3"/></g>
+              </g>
+              <g class="speed" stroke="rgba(255,255,255,.7)" stroke-width="3" stroke-linecap="round"><path d="M-6 280h-28M-6 300h-40M-6 320h-22"/></g>
+
+              <!-- courier with pallet jack -->
+              <g class="courier">
+                <circle cx="340" cy="226" r="13" fill="#f3b790"/>
+                <path d="M326 222 Q340 206 354 222 Q344 214 326 222Z" fill="#27386b"/>
+                <rect x="324" y="240" width="32" height="56" rx="12" fill="#ffd23f"/>
+                <path d="M334 296 L326 372M346 296 L362 366" stroke="#27386b" stroke-width="10" stroke-linecap="round"/>
+                <path d="M326 262 L308 292" stroke="#f3b790" stroke-width="8" stroke-linecap="round"/>
+                <rect x="278" y="344" width="86" height="12" rx="3" fill="#ffd23f"/>
+                <rect x="284" y="318" width="40" height="26" rx="3" fill="#f7a24a"/><rect x="326" y="324" width="34" height="20" rx="3" fill="#f7b44f"/>
+                <path d="M308 292 L296 344" stroke="#27386b" stroke-width="4"/>
+                <circle cx="292" cy="362" r="6" fill="#27386b"/><circle cx="352" cy="362" r="6" fill="#27386b"/>
+              </g>
+            </svg>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="services">
+        <div class="container">
+          <div class="section-head">
+            <span class="eyebrow">What we do</span>
+            <h2>Integrated solutions that move your business forward.</h2>
+            <p>
+              From sourcing and storage to distribution and monitoring, we design logistics
+              strategies that reduce delays, cut costs, and improve visibility.
+            </p>
+          </div>
+
+          <div class="services-grid">
+            <article class="service-card sell-card">
+              <div class="icon-box" aria-hidden="true">
+                <svg viewBox="0 0 64 64" focusable="false">
+                  <defs>
+                    <linearGradient id="foodBag" x1="0" y1="0" x2="1" y2="1">
+                      <stop stop-color="#64c0ff"/><stop offset=".48" stop-color="#2388e8"/><stop offset="1" stop-color="#1457b2"/>
+                    </linearGradient>
+                    <linearGradient id="foodFold" x1="0" y1="0" x2="0" y2="1">
+                      <stop stop-color="#eaf7ff"/><stop offset="1" stop-color="#a9dcff"/>
+                    </linearGradient>
+                    <filter id="foodShadow" x="-30%" y="-30%" width="160%" height="170%">
+                      <feDropShadow dx="0" dy="2" stdDeviation="1.5" flood-color="#123253" flood-opacity=".24"/>
+                    </filter>
+                  </defs>
+                  <path d="M23 24v-4a9 9 0 0 1 18 0v4" fill="none" stroke="#173957" stroke-width="3.5" stroke-linecap="round"/>
+                  <path d="M25 23v-3a7 7 0 0 1 14 0v3" fill="none" stroke="#fff" stroke-width="1.4" stroke-linecap="round" opacity=".85"/>
+                  <path d="M13 25h38l-4 30H17z" fill="url(#foodBag)" stroke="#123253" stroke-width="2" stroke-linejoin="round" filter="url(#foodShadow)"/>
+                  <path d="M13 28h38l-1.1 5H14z" fill="url(#foodFold)"/>
+                  <path d="m18 35 1 16M46 35l-2 16" stroke="#fff" stroke-width="1.3" opacity=".3"/>
+                  <path d="M24 40h16a2 2 0 0 1 2 2v7H22v-7a2 2 0 0 1 2-2Z" fill="#f5fbff" opacity=".96"/>
+                  <path d="M26 44h12" stroke="#f1a440" stroke-width="1.8" stroke-linecap="round"/>
+                  <circle cx="28" cy="47" r="1.3" fill="#61b86b"/><circle cx="36" cy="47" r="1.3" fill="#e97855"/>
+                  <path d="M25 18c-2-3 1-4 2-6M32 17c-2-3 1-4 2-6M39 18c-2-3 1-4 2-6" fill="none" stroke="#f09a42" stroke-width="1.8" stroke-linecap="round"/>
+                </svg>
+              </div>
+              <h3>Food Express</h3>
+              <p>
+                Choose a restaurant, browse its menu, and view delivery progress in Cainta.
+              </p>
+              <button type="button" class="sell-trigger" data-service="Food Express">Browse Restaurants</button>
+            </article>
+
+            <article class="service-card sell-card">
+              <div class="icon-box icon-box-fashion" aria-hidden="true">
+                <svg viewBox="0 0 64 64" focusable="false">
+                  <defs>
+                    <linearGradient id="shirtFabric" x1="0" y1="0" x2="1" y2="1">
+                      <stop stop-color="#8bd5ff"/><stop offset=".42" stop-color="#3b9bea"/><stop offset="1" stop-color="#1761bb"/>
+                    </linearGradient>
+                    <linearGradient id="shirtSleeve" x1="0" y1="0" x2="1" y2="0">
+                      <stop stop-color="#2374cc"/><stop offset=".5" stop-color="#60baff"/><stop offset="1" stop-color="#1d67bd"/>
+                    </linearGradient>
+                    <filter id="shirtShadow" x="-30%" y="-30%" width="160%" height="170%">
+                      <feDropShadow dx="0" dy="2" stdDeviation="1.5" flood-color="#123253" flood-opacity=".25"/>
+                    </filter>
+                  </defs>
+                  <path d="M28 17c0 3 2 5 4 5s4-2 4-5" fill="none" stroke="#183855" stroke-width="2.5" stroke-linecap="round"/>
+                  <path d="m24 20-12 7 5 11 7-3v17h16V35l7 3 5-11-12-7c-.7 4-3.8 7-8 7s-7.3-3-8-7Z" fill="url(#shirtFabric)" stroke="#163c61" stroke-width="2" stroke-linejoin="round" filter="url(#shirtShadow)"/>
+                  <path d="m24 22-8 5 3 7 5-2M40 22l8 5-3 7-5-2" fill="url(#shirtSleeve)" stroke="#d9f2ff" stroke-width=".8" stroke-linejoin="round" opacity=".9"/>
+                  <path d="M28 29c1.5 2 2.7 3 4 3s2.5-1 4-3M23 36v13M41 36v13" fill="none" stroke="#c6eaff" stroke-width="1.1" opacity=".7"/>
+                  <path d="M28 38h8" stroke="#e9f7ff" stroke-width="1.5" stroke-linecap="round" opacity=".75"/>
+                  <path d="m46 20 7-4 5 9-8 4z" fill="#f3aa50" stroke="#714d2c" stroke-width="1.3" stroke-linejoin="round"/>
+                  <circle cx="51.5" cy="20.5" r="1" fill="#fff1ce"/>
+                  <path d="m46 21-4 3" stroke="#f3aa50" stroke-width="1.3"/>
+                </svg>
+              </div>
+              <h3>Online Bazaar</h3>
+              <p>
+                Search a product, compare offers from different sellers, and request delivery to your door.
+              </p>
+              <button type="button" class="sell-trigger" data-service="Online Bazaar">Shop Products</button>
+              <button type="button" class="sell-trigger bazaar-list-trigger" data-open-bazaar-shop>Make a Shop</button>
+            </article>
+
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="about">
+        <div class="container feature-wrap">
+          <div class="feature-panel">
+            <h3>Built for resilience, speed, and control.</h3>
+            <ul class="feature-list">
+              <li>Local logistics support across Cainta, Rizal and nearby communities.</li>
+              <li>Responsive operations team with proactive issue tracking and reporting.</li>
+              <li>Custom supply chain planning tailored to your business model and demand cycles.</li>
+              <li>Data-driven forecasting that improves inventory flow and service reliability.</li>
+            </ul>
+          </div>
+
+          <div>
+            <div class="section-head" style="margin-bottom: 18px;">
+              <span class="eyebrow">Why choose us</span>
+              <h2>Dependable logistics support across every stage.</h2>
+            </div>
+
+            <div class="stats-box">
+              <div class="stat-card">
+                <strong>98.6%</strong>
+                <p>Customer satisfaction rate</p>
+              </div>
+
+              <div class="stat-card">
+                <strong>35%</strong>
+                <p>Average cost reduction</p>
+              </div>
+
+              <div class="stat-card">
+                <strong>20+</strong>
+                <p>Partner networks</p>
+              </div>
+
+              <div class="stat-card">
+                <strong>1 yr</strong>
+                <p>Industry expertise</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="process">
+        <div class="container">
+          <div class="section-head">
+            <span class="eyebrow">How it works</span>
+            <h2>Simple process. Strong performance.</h2>
+          </div>
+
+          <div class="process-grid">
+            <div class="process-step">
+              <div class="step-number">1</div>
+              <h3>Assess</h3>
+              <p>We review your supply chain goals, volume, and delivery demands.</p>
+            </div>
+
+            <div class="process-step">
+              <div class="step-number">2</div>
+              <h3>Plan</h3>
+              <p>We build a tailored logistics model to optimize routes and inventory flow.</p>
+            </div>
+
+            <div class="process-step">
+              <div class="step-number">3</div>
+              <h3>Execute</h3>
+              <p>Our team handles warehousing, transport, fulfillment, and tracking.</p>
+            </div>
+
+            <div class="process-step">
+              <div class="step-number">4</div>
+              <h3>Improve</h3>
+              <p>We monitor performance and refine operations for ongoing efficiency gains.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="contact">
+        <div class="container">
+          <div class="cta">
+            <div>
+              <h3>Need a supply chain partner you can trust?</h3>
+              <p>Let’s build a logistics strategy that keeps your business moving.</p>
+            </div>
+            <a href="mailto:cainta1express@gmail.com" class="btn btn-primary">Contact Us</a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <div class="container">
+        <div class="footer-grid">
+          <div>
+            <a href="#home" class="logo" aria-label="Cainta One Express home">
+              <span class="logo-mark" aria-hidden="true">
+                <img src="favicon.svg" alt="" width="46" height="46" />
+              </span>
+              <span style="color: white;">Cainta One Express</span>
+            </a>
+            <p style="margin-top: 14px; max-width: 260px;">
+              Smart logistics solutions for supply, warehousing, transportation, and fulfillment.
+            </p>
+          </div>
+
+          <div>
+            <h4>Company</h4>
+            <ul>
+              <li><a href="#about">About</a></li>
+              <li><a href="#services">Services</a></li>
+              <li><a href="#process">Process</a></li>
+            </ul>
+          </div>
+
+          <div>
+            <h4>Support</h4>
+            <ul>
+              <li><a href="#contact">Quote Request</a></li>
+              <li><a href="#contact">Help Center</a></li>
+              <li><a href="#contact">Customer Care</a></li>
+            </ul>
+          </div>
+
+          <div>
+            <h4>Contact</h4>
+            <ul>
+              <li>09566753142</li>
+              <li>cainta1express@gmail.com</li>
+              <li>Cainta, Rizal</li>
+            </ul>
+          </div>
+        </div>
+
+      </div>
+    </footer>
+
+    <nav class="mobile-bottom-nav" aria-label="Mobile quick navigation">
+      <a class="mobile-bottom-nav-item" href="#home">
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z" />
+        </svg>
+        <span>Home</span>
+      </a>
+      <button class="mobile-bottom-nav-item sell-trigger" type="button" data-service="Food Express">
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M4 8h16l-1 12H5L4 8Z" />
+          <path d="M8 8V6a4 4 0 0 1 8 0v2M9 13h6" />
+        </svg>
+        <span>Food</span>
+      </button>
+      <button class="mobile-bottom-nav-item sell-trigger" type="button" data-service="Online Bazaar">
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M4 8h16l-1 12H5L4 8Z" />
+          <path d="m4 8 2-5h12l2 5M9 12v1a3 3 0 0 0 6 0v-1" />
+        </svg>
+        <span>Bazaar</span>
+      </button>
+      <button class="mobile-bottom-nav-item" type="button" data-mobile-chat aria-controls="assistant-chat-panel" aria-expanded="false">
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M20 11.5a7.5 7.5 0 0 1-8 7.5 8 8 0 0 1-3.5-.8L4 20l1.2-3.7A7.2 7.2 0 0 1 4 12c0-4.1 3.6-7.5 8-7.5s8 3.1 8 7Z" />
+          <path d="M8 12h.01M12 12h.01M16 12h.01" />
+        </svg>
+        <span>Chat</span>
+      </button>
+    </nav>
+
+    <!-- Pictures for the item search (one lit, shaded picture per item and category).
+         Used with <use href="#ic-chicken">. Add a new <symbol id="ic-your-item"> to give a new item a picture. -->
+    <svg class="icon-sprite" width="0" height="0" aria-hidden="true" focusable="false">
+<defs>
+<filter id="soft" x="-40%" y="-150%" width="180%" height="400%"><feGaussianBlur stdDeviation="1.7"/></filter>
+<filter id="g1" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB"><feTurbulence type="fractalNoise" baseFrequency=".7" numOctaves="2" seed="4" result="n"/><feColorMatrix in="n" type="matrix" values=".4 .4 .4 0 -.1 .4 .4 .4 0 -.1 .4 .4 .4 0 -.1 0 0 0 0 1" result="g"/><feBlend in="g" in2="SourceGraphic" mode="soft-light" result="b"/><feComposite in="b" in2="SourceAlpha" operator="in"/></filter>
+<filter id="g2" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB"><feTurbulence type="fractalNoise" baseFrequency=".55" numOctaves="3" seed="9" result="n"/><feColorMatrix in="n" type="matrix" values=".55 .55 .55 0 -.325 .55 .55 .55 0 -.325 .55 .55 .55 0 -.325 0 0 0 0 1" result="g"/><feBlend in="g" in2="SourceGraphic" mode="soft-light" result="b"/><feComposite in="b" in2="SourceAlpha" operator="in"/></filter>
+<radialGradient id="hl"><stop offset="0" stop-color="#fff" stop-opacity="1"/><stop offset=".6" stop-color="#fff" stop-opacity=".45"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+<radialGradient id="gr0" cx=".36" cy=".3" r=".85"><stop offset="0" stop-color="#fffbf2"/><stop offset=".45" stop-color="#fff7e6"/><stop offset="1" stop-color="#a8a9aa"/></radialGradient>
+<linearGradient id="gl1" x1=".2" y1="0" x2=".8" y2="1"><stop offset="0" stop-color="#f6cab2"/><stop offset=".5" stop-color="#f0a37a"/><stop offset="1" stop-color="#bb866f"/></linearGradient>
+<linearGradient id="gl2" x1=".2" y1="0" x2=".8" y2="1"><stop offset="0" stop-color="#e9bb84"/><stop offset=".5" stop-color="#d98a2b"/><stop offset="1" stop-color="#9c6d37"/></linearGradient>
+<radialGradient id="gr3" cx=".36" cy=".3" r=".85"><stop offset="0" stop-color="#ffe8bc"/><stop offset=".45" stop-color="#ffd27a"/><stop offset="1" stop-color="#a89369"/></radialGradient>
+<linearGradient id="gl4" x1=".2" y1="0" x2=".8" y2="1"><stop offset="0" stop-color="#ffc4cd"/><stop offset=".5" stop-color="#ff9aa8"/><stop offset="1" stop-color="#c77f91"/></linearGradient>
+<linearGradient id="gl5" x1=".2" y1="0" x2=".8" y2="1"><stop offset="0" stop-color="#ffdce1"/><stop offset=".5" stop-color="#ffc2cb"/><stop offset="1" stop-color="#c79dab"/></linearGradient>
+<linearGradient id="gl6" x1=".2" y1="0" x2=".8" y2="1"><stop offset="0" stop-color="#df9390"/><stop offset=".5" stop-color="#c8453f"/><stop offset="1" stop-color="#913f44"/></linearGradient>
+<linearGradient id="gl7" x1=".2" y1="0" x2=".8" y2="1"><stop offset="0" stop-color="#a2d3f6"/><stop offset=".5" stop-color="#5fb3f0"/><stop offset="1" stop-color="#5092c6"/></linearGradient>
+<linearGradient id="gl8" x1=".2" y1="0" x2=".8" y2="1"><stop offset="0" stop-color="#8dc5f3"/><stop offset=".5" stop-color="#3b9bea"/><stop offset="1" stop-color="#3478b5"/></linearGradient>
+<radialGradient id="gr9" cx=".36" cy=".3" r=".85"><stop offset="0" stop-color="#8b9cab"/><stop offset=".45" stop-color="#173957"/><stop offset="1" stop-color="#1d3754"/></radialGradient>
+<linearGradient id="gl10" x1=".2" y1="0" x2=".8" y2="1"><stop offset="0" stop-color="#fffaf0"/><stop offset=".5" stop-color="#fff7e6"/><stop offset="1" stop-color="#c7c4bf"/></linearGradient>
+<linearGradient id="gl11" x1=".2" y1="0" x2=".8" y2="1"><stop offset="0" stop-color="#f7dcbb"/><stop offset=".5" stop-color="#f2c28a"/><stop offset="1" stop-color="#bd9d7b"/></linearGradient>
+<linearGradient id="gl12" x1=".2" y1="0" x2=".8" y2="1"><stop offset="0" stop-color="#f7b985"/><stop offset=".5" stop-color="#f2872d"/><stop offset="1" stop-color="#bd7136"/></linearGradient>
+<linearGradient id="gl13" x1=".2" y1="0" x2=".8" y2="1"><stop offset="0" stop-color="#a3d6a9"/><stop offset=".5" stop-color="#61b86b"/><stop offset="1" stop-color="#4d8b61"/></linearGradient>
+<linearGradient id="gl14" x1=".2" y1="0" x2=".8" y2="1"><stop offset="0" stop-color="#96ca9f"/><stop offset=".5" stop-color="#4aa35a"/><stop offset="1" stop-color="#3e7d56"/></linearGradient>
+<linearGradient id="gl15" x1=".2" y1="0" x2=".8" y2="1"><stop offset="0" stop-color="#f2a39f"/><stop offset=".5" stop-color="#e8605a"/><stop offset="1" stop-color="#a65156"/></linearGradient>
+<linearGradient id="gl16" x1=".2" y1="0" x2=".8" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset=".5" stop-color="#fff"/><stop offset="1" stop-color="#c7cad1"/></linearGradient>
+<linearGradient id="gl17" x1=".2" y1="0" x2=".8" y2="1"><stop offset="0" stop-color="#ffe590"/><stop offset=".5" stop-color="#ffd23f"/><stop offset="1" stop-color="#c7a943"/></linearGradient>
+<linearGradient id="gl18" x1=".2" y1="0" x2=".8" y2="1"><stop offset="0" stop-color="#facd8d"/><stop offset=".5" stop-color="#f7a93b"/><stop offset="1" stop-color="#c18b40"/></linearGradient>
+<linearGradient id="gl19" x1=".2" y1="0" x2=".8" y2="1"><stop offset="0" stop-color="#a98d7d"/><stop offset=".5" stop-color="#6b3b1f"/><stop offset="1" stop-color="#54392f"/></linearGradient>
+<linearGradient id="gl20" x1=".2" y1="0" x2=".8" y2="1"><stop offset="0" stop-color="#fff7e7"/><stop offset=".5" stop-color="#fff1d6"/><stop offset="1" stop-color="#c7c0b3"/></linearGradient>
+<radialGradient id="gr21" cx=".36" cy=".3" r=".85"><stop offset="0" stop-color="#f4b0ac"/><stop offset=".45" stop-color="#e8605a"/><stop offset="1" stop-color="#9a4e56"/></radialGradient>
+<linearGradient id="gl22" x1=".2" y1="0" x2=".8" y2="1"><stop offset="0" stop-color="#f9f0da"/><stop offset=".5" stop-color="#f4e6c0"/><stop offset="1" stop-color="#beb8a3"/></linearGradient>
+<radialGradient id="gr23" cx=".36" cy=".3" r=".85"><stop offset="0" stop-color="#cdb5ea"/><stop offset=".45" stop-color="#9b6bd6"/><stop offset="1" stop-color="#6c55a0"/></radialGradient>
+<linearGradient id="gl24" x1=".2" y1="0" x2=".8" y2="1"><stop offset="0" stop-color="#daf0ff"/><stop offset=".5" stop-color="#bfe6ff"/><stop offset="1" stop-color="#97b8d1"/></linearGradient>
+<linearGradient id="gl25" x1=".2" y1="0" x2=".8" y2="1"><stop offset="0" stop-color="#bce7ff"/><stop offset=".5" stop-color="#8bd5ff"/><stop offset="1" stop-color="#71abd1"/></linearGradient>
+<linearGradient id="gl26" x1=".2" y1="0" x2=".8" y2="1"><stop offset="0" stop-color="#e3e8ef"/><stop offset=".5" stop-color="#cfd8e3"/><stop offset="1" stop-color="#a3adbd"/></linearGradient>
+<linearGradient id="gl27" x1=".2" y1="0" x2=".8" y2="1"><stop offset="0" stop-color="#ecf0f5"/><stop offset=".5" stop-color="#dfe6ee"/><stop offset="1" stop-color="#afb8c5"/></linearGradient>
+<radialGradient id="gr28" cx=".36" cy=".3" r=".85"><stop offset="0" stop-color="#ffffff"/><stop offset=".45" stop-color="#fff"/><stop offset="1" stop-color="#a8aeb9"/></radialGradient>
+<radialGradient id="gr29" cx=".36" cy=".3" r=".85"><stop offset="0" stop-color="#f8fafc"/><stop offset=".45" stop-color="#f2f5f9"/><stop offset="1" stop-color="#a0a8b5"/></radialGradient>
+<linearGradient id="gl30" x1=".2" y1="0" x2=".8" y2="1"><stop offset="0" stop-color="#edbe7d"/><stop offset=".5" stop-color="#e08f1f"/><stop offset="1" stop-color="#b0772b"/></linearGradient>
+<radialGradient id="gr31" cx=".36" cy=".3" r=".85"><stop offset="0" stop-color="#fff8ea"/><stop offset=".45" stop-color="#fff1d6"/><stop offset="1" stop-color="#a8a5a0"/></radialGradient>
+<linearGradient id="gl32" x1=".2" y1="0" x2=".8" y2="1"><stop offset="0" stop-color="#d6908d"/><stop offset=".5" stop-color="#b8403b"/><stop offset="1" stop-color="#863c42"/></linearGradient>
+<radialGradient id="gr33" cx=".36" cy=".3" r=".85"><stop offset="0" stop-color="#f4dcb5"/><stop offset=".45" stop-color="#e8b86b"/><stop offset="1" stop-color="#9a8360"/></radialGradient>
+<radialGradient id="gr34" cx=".36" cy=".3" r=".85"><stop offset="0" stop-color="#b59d8f"/><stop offset=".45" stop-color="#6b3b1f"/><stop offset="1" stop-color="#4f3832"/></radialGradient>
+<linearGradient id="gl35" x1=".2" y1="0" x2=".8" y2="1"><stop offset="0" stop-color="#b29684"/><stop offset=".5" stop-color="#7a4a2b"/><stop offset="1" stop-color="#5d4337"/></linearGradient>
+<linearGradient id="gl36" x1=".2" y1="0" x2=".8" y2="1"><stop offset="0" stop-color="#f2d6a9"/><stop offset=".5" stop-color="#e8b86b"/><stop offset="1" stop-color="#b69664"/></linearGradient>
+<linearGradient id="gl37" x1=".2" y1="0" x2=".8" y2="1"><stop offset="0" stop-color="#bbabf6"/><stop offset=".5" stop-color="#8a6ff0"/><stop offset="1" stop-color="#685bb9"/></linearGradient>
+<linearGradient id="gl38" x1=".2" y1="0" x2=".8" y2="1"><stop offset="0" stop-color="#ffd3db"/><stop offset=".5" stop-color="#ffb3c1"/><stop offset="1" stop-color="#c792a3"/></linearGradient>
+<linearGradient id="gl39" x1=".2" y1="0" x2=".8" y2="1"><stop offset="0" stop-color="#ffe5b2"/><stop offset=".5" stop-color="#ffd27a"/><stop offset="1" stop-color="#c7a96f"/></linearGradient>
+<radialGradient id="gr40" cx=".36" cy=".3" r=".85"><stop offset="0" stop-color="#e7ecf1"/><stop offset=".45" stop-color="#cfd8e3"/><stop offset="1" stop-color="#8b96a8"/></radialGradient>
+<radialGradient id="gr41" cx=".36" cy=".3" r=".85"><stop offset="0" stop-color="#c6e7be"/><stop offset=".45" stop-color="#8ccf7e"/><stop offset="1" stop-color="#63916b"/></radialGradient>
+<linearGradient id="gl42" x1=".2" y1="0" x2=".8" y2="1"><stop offset="0" stop-color="#bb9c87"/><stop offset=".5" stop-color="#8a5530"/><stop offset="1" stop-color="#684a3b"/></linearGradient>
+<radialGradient id="gr43" cx=".36" cy=".3" r=".85"><stop offset="0" stop-color="#dcbca4"/><stop offset=".45" stop-color="#b9784a"/><stop offset="1" stop-color="#7e5d4c"/></radialGradient>
+<radialGradient id="gr44" cx=".36" cy=".3" r=".85"><stop offset="0" stop-color="#d2b49e"/><stop offset=".45" stop-color="#a56a3e"/><stop offset="1" stop-color="#725445"/></radialGradient>
+<linearGradient id="gl45" x1=".2" y1="0" x2=".8" y2="1"><stop offset="0" stop-color="#d6b196"/><stop offset=".5" stop-color="#b9784a"/><stop offset="1" stop-color="#87614c"/></linearGradient>
+<linearGradient id="gl46" x1=".2" y1="0" x2=".8" y2="1"><stop offset="0" stop-color="#8e96a0"/><stop offset=".5" stop-color="#3d4a5c"/><stop offset="1" stop-color="#354358"/></linearGradient>
+<linearGradient id="gl47" x1=".2" y1="0" x2=".8" y2="1"><stop offset="0" stop-color="#dfbb9f"/><stop offset=".5" stop-color="#c78a5a"/><stop offset="1" stop-color="#906d56"/></linearGradient>
+<radialGradient id="gr48" cx=".36" cy=".3" r=".85"><stop offset="0" stop-color="#ffe89f"/><stop offset=".45" stop-color="#ffd23f"/><stop offset="1" stop-color="#a89345"/></radialGradient>
+<radialGradient id="gr49" cx=".36" cy=".3" r=".85"><stop offset="0" stop-color="#b0dcb5"/><stop offset=".45" stop-color="#61b86b"/><stop offset="1" stop-color="#498360"/></radialGradient>
+<radialGradient id="gr50" cx=".36" cy=".3" r=".85"><stop offset="0" stop-color="#fcf9f2"/><stop offset=".45" stop-color="#f9f3e6"/><stop offset="1" stop-color="#a5a7aa"/></radialGradient>
+<linearGradient id="gl51" x1=".2" y1="0" x2=".8" y2="1"><stop offset="0" stop-color="#f2ca8d"/><stop offset=".5" stop-color="#e8a33b"/><stop offset="1" stop-color="#b68640"/></linearGradient>
+<radialGradient id="gr52" cx=".36" cy=".3" r=".85"><stop offset="0" stop-color="#f8bcb8"/><stop offset=".45" stop-color="#f07a72"/><stop offset="1" stop-color="#9f5e64"/></radialGradient>
+<radialGradient id="gr53" cx=".36" cy=".3" r=".85"><stop offset="0" stop-color="#f4e7d0"/><stop offset=".45" stop-color="#e9cfa2"/><stop offset="1" stop-color="#9b9181"/></radialGradient>
+<linearGradient id="gl54" x1=".2" y1="0" x2=".8" y2="1"><stop offset="0" stop-color="#78a3d8"/><stop offset=".5" stop-color="#1761bb"/><stop offset="1" stop-color="#1c5296"/></linearGradient>
+<linearGradient id="gl55" x1=".2" y1="0" x2=".8" y2="1"><stop offset="0" stop-color="#a999da"/><stop offset=".5" stop-color="#6b4fc0"/><stop offset="1" stop-color="#54469a"/></linearGradient>
+<linearGradient id="gl56" x1=".2" y1="0" x2=".8" y2="1"><stop offset="0" stop-color="#b2a2ed"/><stop offset=".5" stop-color="#7a5fe0"/><stop offset="1" stop-color="#5d50af"/></linearGradient>
+<linearGradient id="gl57" x1=".2" y1="0" x2=".8" y2="1"><stop offset="0" stop-color="#86aba2"/><stop offset=".5" stop-color="#2f6f5e"/><stop offset="1" stop-color="#2c5b59"/></linearGradient>
+<linearGradient id="gl58" x1=".2" y1="0" x2=".8" y2="1"><stop offset="0" stop-color="#809f97"/><stop offset=".5" stop-color="#245a4c"/><stop offset="1" stop-color="#254d4d"/></linearGradient>
+<linearGradient id="gl59" x1=".2" y1="0" x2=".8" y2="1"><stop offset="0" stop-color="#ffbeca"/><stop offset=".5" stop-color="#ff8fa3"/><stop offset="1" stop-color="#c7778d"/></linearGradient>
+<linearGradient id="gl60" x1=".2" y1="0" x2=".8" y2="1"><stop offset="0" stop-color="#eda5b5"/><stop offset=".5" stop-color="#e0647f"/><stop offset="1" stop-color="#a1546f"/></linearGradient>
+<linearGradient id="gl61" x1=".2" y1="0" x2=".8" y2="1"><stop offset="0" stop-color="#8dabcd"/><stop offset=".5" stop-color="#3b6ea8"/><stop offset="1" stop-color="#345a8a"/></linearGradient>
+<linearGradient id="gl62" x1=".2" y1="0" x2=".8" y2="1"><stop offset="0" stop-color="#e9d5b1"/><stop offset=".5" stop-color="#d9b778"/><stop offset="1" stop-color="#aa956d"/></linearGradient>
+<radialGradient id="gr63" cx=".36" cy=".3" r=".85"><stop offset="0" stop-color="#dca09d"/><stop offset=".45" stop-color="#b8403b"/><stop offset="1" stop-color="#7e3b43"/></radialGradient>
+<linearGradient id="gl64" x1=".2" y1="0" x2=".8" y2="1"><stop offset="0" stop-color="#828ca9"/><stop offset=".5" stop-color="#27386b"/><stop offset="1" stop-color="#273761"/></linearGradient>
+<linearGradient id="gl65" x1=".2" y1="0" x2=".8" y2="1"><stop offset="0" stop-color="#90bf9a"/><stop offset=".5" stop-color="#3f9150"/><stop offset="1" stop-color="#367150"/></linearGradient>
+<linearGradient id="gl66" x1=".2" y1="0" x2=".8" y2="1"><stop offset="0" stop-color="#7dd6c4"/><stop offset=".5" stop-color="#1fb89a"/><stop offset="1" stop-color="#218b80"/></linearGradient>
+<linearGradient id="gl67" x1=".2" y1="0" x2=".8" y2="1"><stop offset="0" stop-color="#bbc5d1"/><stop offset=".5" stop-color="#8a9bb0"/><stop offset="1" stop-color="#68788f"/></linearGradient>
+<radialGradient id="gr68" cx=".36" cy=".3" r=".85"><stop offset="0" stop-color="#9dcdf4"/><stop offset=".45" stop-color="#3b9bea"/><stop offset="1" stop-color="#3372ac"/></radialGradient>
+<radialGradient id="gr69" cx=".36" cy=".3" r=".85"><stop offset="0" stop-color="#c5eaff"/><stop offset=".45" stop-color="#8bd5ff"/><stop offset="1" stop-color="#6395b9"/></radialGradient>
+</defs>
+<symbol id="ic-chicken" viewBox="0 0 64 64"><ellipse cx="32" cy="59.2" rx="19" ry="2.8" fill="#0b1f3a" fill-opacity=".30" stroke="none" filter="url(#soft)"/><g stroke-linejoin="round" stroke-linecap="round"><g filter="url(#g2)"><path d="M30 34L16 48" stroke="#92969a" stroke-width="9" fill="none"/><path d="M30 34L16 48" stroke="#fff7e6" stroke-width="5" fill="none"/><circle cx="13" cy="46" r="4.5" fill="url(#gr0)" stroke="#888c93" stroke-width="1" stroke-opacity=".85"/><circle cx="18" cy="52" r="4.5" fill="url(#gr0)" stroke="#888c93" stroke-width="1" stroke-opacity=".85"/><path d="M26 13C38 5 55 15 49 32C45 43 32 42 26 35C19 28 20 18 26 13Z" fill="url(#gl1)" stroke="#816662" stroke-width="1" stroke-opacity=".85"/><path d="M30 18Q38 14 44 20" stroke="#fff" stroke-opacity=".55" fill="none"/></g><ellipse cx="34" cy="18" rx="7" ry="3" transform="rotate(-25 34 18)" fill="url(#hl)" fill-opacity="0.9" stroke="none"/></g></symbol>
+<symbol id="ic-fried-chicken" viewBox="0 0 64 64"><ellipse cx="32" cy="59.2" rx="19" ry="2.8" fill="#0b1f3a" fill-opacity=".30" stroke="none" filter="url(#soft)"/><g stroke-linejoin="round" stroke-linecap="round"><g filter="url(#g2)"><path d="M30 34L16 48" stroke="#92969a" stroke-width="9" fill="none"/><path d="M30 34L16 48" stroke="#fff7e6" stroke-width="5" fill="none"/><circle cx="13" cy="46" r="4.5" fill="url(#gr0)" stroke="#888c93" stroke-width="1" stroke-opacity=".85"/><circle cx="18" cy="52" r="4.5" fill="url(#gr0)" stroke="#888c93" stroke-width="1" stroke-opacity=".85"/><path d="M26 13C38 5 55 15 49 32C45 43 32 42 26 35C19 28 20 18 26 13Z" fill="url(#gl2)" stroke="#775b3f" stroke-width="1" stroke-opacity=".85"/><path d="M30 18Q38 14 44 20" stroke="#fff" stroke-opacity=".55" fill="none"/><circle cx="34" cy="22" r="1.3" fill="url(#gr3)" stroke="none"/><circle cx="42" cy="28" r="1.3" fill="url(#gr3)" stroke="none"/><circle cx="32" cy="32" r="1.3" fill="url(#gr3)" stroke="none"/></g><ellipse cx="35" cy="19" rx="6" ry="2.5" transform="rotate(-25 35 19)" fill="url(#hl)" fill-opacity="0.6" stroke="none"/></g></symbol>
+<symbol id="ic-pork" viewBox="0 0 64 64"><ellipse cx="32" cy="59.2" rx="19" ry="2.8" fill="#0b1f3a" fill-opacity=".30" stroke="none" filter="url(#soft)"/><g stroke-linejoin="round" stroke-linecap="round"><g filter="url(#g2)"><path d="M9 30C9 18 22 12 36 14C50 16 57 27 52 39C47 51 29 53 19 47C12 43 9 37 9 30Z" fill="url(#gl4)" stroke="#886277" stroke-width="1" stroke-opacity=".85"/><path d="M15 31C15 22 25 18 35 20C46 22 50 30 47 38C43 46 30 47 23 43C18 40 15 36 15 31Z" fill="url(#gl5)" stroke-width="1" stroke="#887487" stroke-opacity=".85"/><circle cx="35" cy="31" r="5" fill="url(#gr0)" stroke="#888c93" stroke-width="1" stroke-opacity=".85"/></g><ellipse cx="24" cy="22" rx="8" ry="3" transform="rotate(-10 24 22)" fill="url(#hl)" fill-opacity="0.6" stroke="none"/></g></symbol>
+<symbol id="ic-beef" viewBox="0 0 64 64"><ellipse cx="32" cy="59.2" rx="19" ry="2.8" fill="#0b1f3a" fill-opacity=".30" stroke="none" filter="url(#soft)"/><g stroke-linejoin="round" stroke-linecap="round"><g filter="url(#g2)"><path d="M9 30C9 18 22 12 36 14C50 16 57 27 52 39C47 51 29 53 19 47C12 43 9 37 9 30Z" fill="url(#gl6)" stroke="#6f3c48" stroke-width="1" stroke-opacity=".85"/><path d="M18 28Q26 22 34 26M22 40Q32 36 44 42M38 22Q46 24 48 32" stroke="#ffd0cc" stroke-width="2" fill="none"/><circle cx="40" cy="34" r="4" fill="url(#gr0)" stroke="#888c93" stroke-width="1" stroke-opacity=".85"/></g><ellipse cx="24" cy="22" rx="8" ry="3" transform="rotate(-10 24 22)" fill="url(#hl)" fill-opacity="0.55" stroke="none"/></g></symbol>
+<symbol id="ic-fish" viewBox="0 0 64 64"><ellipse cx="32" cy="59.2" rx="19" ry="2.8" fill="#0b1f3a" fill-opacity=".30" stroke="none" filter="url(#soft)"/><g stroke-linejoin="round" stroke-linecap="round"><path d="M6 32C14 18 36 16 46 32C36 48 14 46 6 32Z" fill="url(#gl7)" stroke="#406d97" stroke-width="1" stroke-opacity=".85"/><path d="M46 32L58 21V43Z" fill="url(#gl8)" stroke="#2f6295" stroke-width="1" stroke-opacity=".85"/><path d="M22 20L28 12L34 19" fill="url(#gl8)" stroke="#2f6295" stroke-width="1" stroke-opacity=".85"/><circle cx="17" cy="29" r="2.2" fill="url(#gr9)" stroke="#1f3653" stroke-width="1" stroke-opacity=".85"/><path d="M26 22Q31 32 26 42" fill="none" stroke="#173957" stroke-opacity=".55" stroke-width="1.6"/><path d="M12 36Q18 38 22 36" stroke-width="1.2" fill="none" stroke="#173957" stroke-opacity=".55"/><ellipse cx="26" cy="24" rx="11" ry="2.8" transform="rotate(-8 26 24)" fill="url(#hl)" fill-opacity="0.7" stroke="none"/></g></symbol>
+<symbol id="ic-eggs" viewBox="0 0 64 64"><ellipse cx="32" cy="59.2" rx="19" ry="2.8" fill="#0b1f3a" fill-opacity=".30" stroke="none" filter="url(#soft)"/><g stroke-linejoin="round" stroke-linecap="round"><path d="M22 10C31 10 37 24 37 35C37 46 31 54 22 54C13 54 7 46 7 35C7 24 13 10 22 10Z" fill="url(#gl10)" stroke="#888c93" stroke-width="1" stroke-opacity=".85"/><g transform="translate(20 4)"><path d="M22 10C31 10 37 24 37 35C37 46 31 54 22 54C13 54 7 46 7 35C7 24 13 10 22 10Z" fill="url(#gl11)" stroke="#82746a" stroke-width="1" stroke-opacity=".85"/></g><path d="M13 24Q11 30 12 36" stroke="#fff" stroke-width="2.5" stroke-opacity=".8" fill="none"/><ellipse cx="14" cy="27" rx="2.6" ry="6" transform="rotate(8 14 27)" fill="url(#hl)" fill-opacity="0.9" stroke="none"/><ellipse cx="35" cy="32" rx="2.6" ry="6" transform="rotate(8 35 32)" fill="url(#hl)" fill-opacity="0.8" stroke="none"/></g></symbol>
+<symbol id="ic-vegetables" viewBox="0 0 64 64"><ellipse cx="32" cy="59.2" rx="19" ry="2.8" fill="#0b1f3a" fill-opacity=".30" stroke="none" filter="url(#soft)"/><g stroke-linejoin="round" stroke-linecap="round"><g filter="url(#g1)"><path d="M14 21C20 13 31 16 36 23L55 54C38 50 22 44 16 34C12 29 11 25 14 21Z" fill="url(#gl12)" stroke="#825940" stroke-width="1" stroke-opacity=".85"/><path d="M17 19C12 13 14 6 19 6C22 10 21 15 19 19Z" fill="url(#gl13)" stroke="#416f5c" stroke-width="1" stroke-opacity=".85"/><path d="M22 16C22 9 28 5 32 8C32 13 28 17 25 18Z" fill="url(#gl14)" stroke="#366654" stroke-width="1" stroke-opacity=".85"/><path d="M13 22C8 20 5 14 8 11C13 12 16 16 16 20Z" fill="url(#gl13)" stroke="#416f5c" stroke-width="1" stroke-opacity=".85"/><path d="M24 28L30 30M30 36L36 38M36 44L41 46" stroke="#c9661a" stroke-width="1.8" fill="none"/></g><ellipse cx="27" cy="25" rx="2.4" ry="8" transform="rotate(-48 27 25)" fill="url(#hl)" fill-opacity="0.6" stroke="none"/></g></symbol>
+<symbol id="ic-fruits" viewBox="0 0 64 64"><ellipse cx="32" cy="59.2" rx="19" ry="2.8" fill="#0b1f3a" fill-opacity=".30" stroke="none" filter="url(#soft)"/><g stroke-linejoin="round" stroke-linecap="round"><path d="M32 20C22 12 8 20 12 36C15 48 24 54 32 50C40 54 49 48 52 36C56 20 42 12 32 20Z" fill="url(#gl15)" stroke="#7d4854" stroke-width="1" stroke-opacity=".85"/><path d="M32 20C32 14 34 10 38 8" fill="none" stroke="#173957" stroke-opacity=".55" stroke-width="1.6"/><path d="M36 14C42 8 50 10 50 10C48 16 42 18 36 14Z" fill="url(#gl13)" stroke="#416f5c" stroke-width="1" stroke-opacity=".85"/><path d="M18 30Q18 38 22 42" stroke="#fff" stroke-width="2.5" stroke-opacity=".7" fill="none"/><ellipse cx="21" cy="28" rx="4" ry="8" transform="rotate(14 21 28)" fill="url(#hl)" fill-opacity="0.9" stroke="none"/></g></symbol>
+<symbol id="ic-rice" viewBox="0 0 64 64"><ellipse cx="32" cy="59.2" rx="19" ry="2.8" fill="#0b1f3a" fill-opacity=".30" stroke="none" filter="url(#soft)"/><g stroke-linejoin="round" stroke-linecap="round"><g filter="url(#g1)"><path d="M8 33H56C56 47 46 56 32 56C18 56 8 47 8 33Z" fill="url(#gl8)" stroke="#2f6295" stroke-width="1" stroke-opacity=".85"/><path d="M12 33C12 17 52 17 52 33Z" fill="url(#gl16)" stroke="#888f9e" stroke-width="1" stroke-opacity=".85"/><path d="M23 29L26 27M32 24L35 25M41 29L44 27M29 31L33 31" stroke="#cfd8e3" stroke-width="1.8" fill="none"/><path d="M16 43H48" stroke="#8bd5ff" stroke-width="2" fill="none"/></g><ellipse cx="17" cy="44" rx="2.6" ry="7" transform="rotate(25 17 44)" fill="url(#hl)" fill-opacity="0.6" stroke="none"/><ellipse cx="28" cy="25" rx="8" ry="2.5" transform="rotate(-8 28 25)" fill="url(#hl)" fill-opacity="0.5" stroke="none"/></g></symbol>
+<symbol id="ic-cooking-oil" viewBox="0 0 64 64"><ellipse cx="32" cy="59.2" rx="11" ry="2.8" fill="#0b1f3a" fill-opacity=".30" stroke="none" filter="url(#soft)"/><g stroke-linejoin="round" stroke-linecap="round"><path d="M27 9H37V17L44 25V53Q44 56 41 56H23Q20 56 20 53V25L27 17Z" fill="url(#gl17)" stroke="#887b48" stroke-width="1" stroke-opacity=".85"/><rect x="25" y="4" width="14" height="7" rx="2" fill="url(#gl18)" stroke="#846946" stroke-width="1" stroke-opacity=".85"/><path d="M20 31H44V47H20Z" fill="url(#gl16)" stroke="#888f9e" stroke-width="1" stroke-opacity=".85"/><path d="M32 34Q37 40 32 45Q27 40 32 34Z" fill="url(#gl18)" stroke="#846946" stroke-width="1" stroke-opacity=".85"/><path d="M24 24V28" stroke="#fff" stroke-opacity=".7" fill="none"/><rect x="22.5" y="33" width="2.6" height="18" rx="1.3" fill="#fff" fill-opacity="0.6" stroke="none"/><rect x="28" y="10" width="1.6" height="8" rx="0.8" fill="#fff" fill-opacity="0.45" stroke="none"/></g></symbol>
+<symbol id="ic-soy-sauce" viewBox="0 0 64 64"><ellipse cx="32" cy="59.2" rx="11" ry="2.8" fill="#0b1f3a" fill-opacity=".30" stroke="none" filter="url(#soft)"/><g stroke-linejoin="round" stroke-linecap="round"><path d="M27 9H37V17L44 25V53Q44 56 41 56H23Q20 56 20 53V25L27 17Z" fill="url(#gl19)" stroke="#453739" stroke-width="1" stroke-opacity=".85"/><rect x="25" y="4" width="14" height="7" rx="2" fill="url(#gl15)" stroke="#7d4854" stroke-width="1" stroke-opacity=".85"/><path d="M20 31H44V47H20Z" fill="url(#gl20)" stroke="#88898c" stroke-width="1" stroke-opacity=".85"/><circle cx="32" cy="39" r="4" fill="url(#gr21)" stroke="#7d4854" stroke-width="1" stroke-opacity=".85"/><path d="M24 24V28" stroke="#fff" stroke-opacity=".7" fill="none"/><rect x="22.5" y="33" width="2.6" height="18" rx="1.3" fill="#fff" fill-opacity="0.6" stroke="none"/><rect x="28" y="10" width="1.6" height="8" rx="0.8" fill="#fff" fill-opacity="0.45" stroke="none"/></g></symbol>
+<symbol id="ic-vinegar" viewBox="0 0 64 64"><ellipse cx="32" cy="59.2" rx="11" ry="2.8" fill="#0b1f3a" fill-opacity=".30" stroke="none" filter="url(#soft)"/><g stroke-linejoin="round" stroke-linecap="round"><path d="M27 9H37V17L44 25V53Q44 56 41 56H23Q20 56 20 53V25L27 17Z" fill="url(#gl22)" stroke="#838482" stroke-width="1" stroke-opacity=".85"/><rect x="25" y="4" width="14" height="7" rx="2" fill="url(#gl18)" stroke="#846946" stroke-width="1" stroke-opacity=".85"/><path d="M20 31H44V47H20Z" fill="url(#gl16)" stroke="#888f9e" stroke-width="1" stroke-opacity=".85"/><circle cx="29" cy="40" r="3" fill="url(#gr23)" stroke="#5b4d8c" stroke-width="1" stroke-opacity=".85"/><circle cx="35" cy="40" r="3" fill="url(#gr23)" stroke="#5b4d8c" stroke-width="1" stroke-opacity=".85"/><path d="M24 24V28" stroke="#fff" stroke-opacity=".7" fill="none"/><rect x="22.5" y="33" width="2.6" height="18" rx="1.3" fill="#fff" fill-opacity="0.6" stroke="none"/><rect x="28" y="10" width="1.6" height="8" rx="0.8" fill="#fff" fill-opacity="0.45" stroke="none"/></g></symbol>
+<symbol id="ic-water" viewBox="0 0 64 64"><ellipse cx="32" cy="59.2" rx="11" ry="2.8" fill="#0b1f3a" fill-opacity=".30" stroke="none" filter="url(#soft)"/><g stroke-linejoin="round" stroke-linecap="round"><path d="M27 9H37V17L44 25V53Q44 56 41 56H23Q20 56 20 53V25L27 17Z" fill="url(#gl24)" stroke="#6b849e" stroke-width="1" stroke-opacity=".85"/><rect x="25" y="4" width="14" height="7" rx="2" fill="url(#gl8)" stroke="#2f6295" stroke-width="1" stroke-opacity=".85"/><path d="M20 31H44V47H20Z" fill="url(#gl16)" stroke="#888f9e" stroke-width="1" stroke-opacity=".85"/><path d="M24 39Q28 35 32 39T40 39" stroke="#3b9bea" fill="none"/><path d="M24 24V28" stroke="#fff" stroke-opacity=".7" fill="none"/><rect x="22.5" y="33" width="2.6" height="18" rx="1.3" fill="#fff" fill-opacity="0.6" stroke="none"/><rect x="28" y="10" width="1.6" height="8" rx="0.8" fill="#fff" fill-opacity="0.45" stroke="none"/></g></symbol>
+<symbol id="ic-sugar" viewBox="0 0 64 64"><ellipse cx="32" cy="59.2" rx="19" ry="2.8" fill="#0b1f3a" fill-opacity=".30" stroke="none" filter="url(#soft)"/><g stroke-linejoin="round" stroke-linecap="round"><g filter="url(#g1)"><path d="M16 14H48L52 54H12Z" fill="url(#gl16)" stroke="#888f9e" stroke-width="1" stroke-opacity=".85"/><path d="M16 14H48L49 22H15Z" fill="url(#gl25)" stroke="#537c9e" stroke-width="1" stroke-opacity=".85"/><path d="M24 33H34V43H24Z" fill="url(#gl16)" stroke="#888f9e" stroke-width="1" stroke-opacity=".85"/><path d="M34 36H42V44H34Z" fill="url(#gl16)" stroke="#888f9e" stroke-width="1" stroke-opacity=".85"/><path d="M14 49H50" stroke="#8bd5ff" stroke-width="2.5" fill="none"/></g></g></symbol>
+<symbol id="ic-salt" viewBox="0 0 64 64"><ellipse cx="32" cy="59.2" rx="12" ry="2.8" fill="#0b1f3a" fill-opacity=".30" stroke="none" filter="url(#soft)"/><g stroke-linejoin="round" stroke-linecap="round"><path d="M22 12Q32 4 42 12L44 22H20Z" fill="url(#gl26)" stroke="#727e92" stroke-width="1" stroke-opacity=".85"/><circle cx="28" cy="14" r="1.2" fill="url(#gr9)" stroke="none"/><circle cx="34" cy="13" r="1.2" fill="url(#gr9)" stroke="none"/><circle cx="38" cy="17" r="1.2" fill="url(#gr9)" stroke="none"/><path d="M20 22H44L46 52Q46 56 42 56H22Q18 56 18 52Z" fill="url(#gl16)" stroke="#888f9e" stroke-width="1" stroke-opacity=".85"/><path d="M19 32H45V44H19Z" fill="url(#gl25)" stroke="#537c9e" stroke-width="1" stroke-opacity=".85"/></g></symbol>
+<symbol id="ic-noodles" viewBox="0 0 64 64"><ellipse cx="32" cy="59.2" rx="19" ry="2.8" fill="#0b1f3a" fill-opacity=".30" stroke="none" filter="url(#soft)"/><g stroke-linejoin="round" stroke-linecap="round"><g filter="url(#g1)"><path d="M40 6L51 28M46 4L57 26" stroke="#b9784a" stroke-width="2.5" fill="none"/><path d="M8 30H56C56 46 46 56 32 56C18 56 8 46 8 30Z" fill="url(#gl15)" stroke="#7d4854" stroke-width="1" stroke-opacity=".85"/><path d="M13 30Q17 17 22 28T31 28T40 28T49 30" stroke="#ffd27a" stroke-width="3.5" fill="none"/><path d="M13 30Q17 17 22 28T31 28T40 28T49 30" stroke="#f7a93b" stroke-width="1.2" fill="none"/><path d="M8 40H56" stroke="#ffd27a" stroke-width="2.5" fill="none"/></g></g></symbol>
+<symbol id="ic-canned-goods" viewBox="0 0 64 64"><ellipse cx="32" cy="59.2" rx="14" ry="2.8" fill="#0b1f3a" fill-opacity=".30" stroke="none" filter="url(#soft)"/><g stroke-linejoin="round" stroke-linecap="round"><path d="M17 14H47V50Q47 56 32 56Q17 56 17 50Z" fill="url(#gl27)" stroke="#798497" stroke-width="1" stroke-opacity=".85"/><path d="M17 24H47V44H17Z" fill="url(#gl15)" stroke="#7d4854" stroke-width="1" stroke-opacity=".85"/><circle cx="32" cy="34" r="5" fill="url(#gr28)" stroke="#888f9e" stroke-width="1" stroke-opacity=".85"/><path d="M29 34H35" stroke="#e8605a" fill="none"/><ellipse cx="32" cy="14" rx="15" ry="5" fill="url(#gr29)" stroke="#828b9c" stroke-width="1" stroke-opacity=".85"/><rect x="19.5" y="24" width="3" height="28" rx="1.5" fill="#fff" fill-opacity="0.5" stroke="none"/></g></symbol>
+<symbol id="ic-softdrinks" viewBox="0 0 64 64"><ellipse cx="32" cy="59.2" rx="14" ry="2.8" fill="#0b1f3a" fill-opacity=".30" stroke="none" filter="url(#soft)"/><g stroke-linejoin="round" stroke-linecap="round"><path d="M17 14H47V50Q47 56 32 56Q17 56 17 50Z" fill="url(#gl27)" stroke="#798497" stroke-width="1" stroke-opacity=".85"/><path d="M17 24H47V44H17Z" fill="url(#gl8)" stroke="#2f6295" stroke-width="1" stroke-opacity=".85"/><path d="M17 34Q24 29 32 34T47 34" stroke="#fff" stroke-width="2.5" fill="none"/><ellipse cx="32" cy="14" rx="15" ry="5" fill="url(#gr29)" stroke="#828b9c" stroke-width="1" stroke-opacity=".85"/><rect x="19.5" y="24" width="3" height="28" rx="1.5" fill="#fff" fill-opacity="0.5" stroke="none"/></g></symbol>
+<symbol id="ic-snacks" viewBox="0 0 64 64"><ellipse cx="32" cy="59.2" rx="19" ry="2.8" fill="#0b1f3a" fill-opacity=".30" stroke="none" filter="url(#soft)"/><g stroke-linejoin="round" stroke-linecap="round"><path d="M15 9H49L47 55H17Z" fill="url(#gl18)" stroke="#846946" stroke-width="1" stroke-opacity=".85"/><path d="M14 8H50V15H14Z" fill="url(#gl30)" stroke="#7a5d39" stroke-width="1" stroke-opacity=".85"/><path d="M16 49H48V56H16Z" fill="url(#gl30)" stroke="#7a5d39" stroke-width="1" stroke-opacity=".85"/><ellipse cx="32" cy="32" rx="11" ry="9" fill="url(#gr31)" stroke="#88898c" stroke-width="1" stroke-opacity=".85"/><path d="M27 33Q32 24 38 31" stroke="#e08f1f" stroke-width="2.5" fill="none"/><path d="M19 12L25 12L21 52L16 52Z" fill="#fff" fill-opacity="0.3" stroke="none"/></g></symbol>
+<symbol id="ic-chips" viewBox="0 0 64 64"><ellipse cx="32" cy="59.2" rx="19" ry="2.8" fill="#0b1f3a" fill-opacity=".30" stroke="none" filter="url(#soft)"/><g stroke-linejoin="round" stroke-linecap="round"><path d="M15 9H49L47 55H17Z" fill="url(#gl15)" stroke="#7d4854" stroke-width="1" stroke-opacity=".85"/><path d="M14 8H50V15H14Z" fill="url(#gl32)" stroke="#683946" stroke-width="1" stroke-opacity=".85"/><path d="M16 49H48V56H16Z" fill="url(#gl32)" stroke="#683946" stroke-width="1" stroke-opacity=".85"/><path d="M24 36Q28 22 40 26Q42 36 34 40Q28 42 24 36Z" fill="url(#gl17)" stroke="#887b48" stroke-width="1" stroke-opacity=".85"/><path d="M29 33Q33 28 37 31" stroke="#e08f1f" stroke-width="1.5" fill="none"/><path d="M19 12L25 12L21 52L16 52Z" fill="#fff" fill-opacity="0.3" stroke="none"/></g></symbol>
+<symbol id="ic-biscuits" viewBox="0 0 64 64"><ellipse cx="32" cy="59.2" rx="19" ry="2.8" fill="#0b1f3a" fill-opacity=".30" stroke="none" filter="url(#soft)"/><g stroke-linejoin="round" stroke-linecap="round"><g filter="url(#g2)"><circle cx="32" cy="32" r="21" fill="url(#gr33)" stroke="#7d6f5c" stroke-width="1" stroke-opacity=".85"/><ellipse cx="24" cy="25" rx="3.5" ry="2.8" fill="url(#gr34)" stroke="none"/><ellipse cx="38" cy="24" rx="3.5" ry="2.8" fill="url(#gr34)" stroke="none"/><ellipse cx="30" cy="38" rx="3.5" ry="2.8" fill="url(#gr34)" stroke="none"/><ellipse cx="42" cy="36" rx="3" ry="2.5" fill="url(#gr34)" stroke="none"/><ellipse cx="20" cy="38" rx="2.5" ry="2" fill="url(#gr34)" stroke="none"/></g><ellipse cx="24" cy="22" rx="9" ry="4" transform="rotate(-30 24 22)" fill="url(#hl)" fill-opacity="0.45" stroke="none"/></g></symbol>
+<symbol id="ic-chocolate" viewBox="0 0 64 64"><ellipse cx="32" cy="59.2" rx="19" ry="2.8" fill="#0b1f3a" fill-opacity=".30" stroke="none" filter="url(#soft)"/><g stroke-linejoin="round" stroke-linecap="round"><g filter="url(#g1)"><g transform="rotate(-18 32 32)"><rect x="10" y="16" width="44" height="32" rx="4" fill="url(#gl35)" stroke="#4c3e3f" stroke-width="1" stroke-opacity=".85"/><path d="M24 16V36M38 16V36M10 26H54" stroke="#5a3219" stroke-width="1.5" fill="none"/><path d="M10 36H54V44Q54 48 50 48H14Q10 48 10 44Z" fill="url(#gl18)" stroke="#846946" stroke-width="1" stroke-opacity=".85"/><path d="M10 36H54" fill="none" stroke="#173957" stroke-opacity=".55" stroke-width="1.6"/></g></g><path d="M12 22L40 14L42 20L14 28Z" fill="#fff" fill-opacity="0.22" stroke="none"/></g></symbol>
+<symbol id="ic-bread" viewBox="0 0 64 64"><ellipse cx="32" cy="59.2" rx="19" ry="2.8" fill="#0b1f3a" fill-opacity=".30" stroke="none" filter="url(#soft)"/><g stroke-linejoin="round" stroke-linecap="round"><g filter="url(#g2)"><path d="M9 30C7 18 18 11 32 11C46 11 57 18 55 30C55 34 53 36 51 36V51H13V36C11 36 9 34 9 30Z" fill="url(#gl36)" stroke="#7d6f5c" stroke-width="1" stroke-opacity=".85"/><path d="M22 19L26 28M32 17L36 28M42 19L46 28" stroke="#b9784a" stroke-width="2.2" fill="none"/></g></g></symbol>
+<symbol id="ic-cake" viewBox="0 0 64 64"><ellipse cx="32" cy="59.2" rx="19" ry="2.8" fill="#0b1f3a" fill-opacity=".30" stroke="none" filter="url(#soft)"/><g stroke-linejoin="round" stroke-linecap="round"><g filter="url(#g1)"><path d="M17 36H47L43 55H21Z" fill="url(#gl37)" stroke="#534f97" stroke-width="1" stroke-opacity=".85"/><path d="M26 36L27 55M32 36V55M38 36L37 55" stroke="#6b4fc0" stroke-width="1.5" fill="none"/><path d="M15 36C10 26 20 19 32 21C44 19 54 26 49 36Z" fill="url(#gl38)" stroke="#886d82" stroke-width="1" stroke-opacity=".85"/><circle cx="32" cy="15" r="4.5" fill="url(#gr21)" stroke="#7d4854" stroke-width="1" stroke-opacity=".85"/><path d="M32 11Q34 7 38 6" fill="none" stroke="#173957" stroke-opacity=".55" stroke-width="1.6"/></g><ellipse cx="24" cy="27" rx="6" ry="2.2" transform="rotate(-10 24 27)" fill="url(#hl)" fill-opacity="0.8" stroke="none"/><ellipse cx="30" cy="13" rx="1.8" ry="1.8" transform="rotate(0 30 13)" fill="url(#hl)" fill-opacity="1" stroke="none"/></g></symbol>
+<symbol id="ic-milk" viewBox="0 0 64 64"><ellipse cx="32" cy="59.2" rx="13" ry="2.8" fill="#0b1f3a" fill-opacity=".30" stroke="none" filter="url(#soft)"/><g stroke-linejoin="round" stroke-linecap="round"><path d="M19 20H45V55H19Z" fill="url(#gl16)" stroke="#888f9e" stroke-width="1" stroke-opacity=".85"/><path d="M19 20L25 8H39L45 20Z" fill="url(#gl25)" stroke="#537c9e" stroke-width="1" stroke-opacity=".85"/><path d="M19 31H45V43H19Z" fill="url(#gl8)" stroke="#2f6295" stroke-width="1" stroke-opacity=".85"/><path d="M32 32Q37 37 32 41Q27 37 32 32Z" fill="url(#gl16)" stroke="#888f9e" stroke-width="1" stroke-opacity=".85"/><rect x="21.5" y="22" width="2.6" height="30" rx="1.3" fill="#fff" fill-opacity="0.55" stroke="none"/></g></symbol>
+<symbol id="ic-juice" viewBox="0 0 64 64"><ellipse cx="32" cy="59.2" rx="19" ry="2.8" fill="#0b1f3a" fill-opacity=".30" stroke="none" filter="url(#soft)"/><g stroke-linejoin="round" stroke-linecap="round"><path d="M46 20L53 13V47L46 54Z" fill="url(#gl30)" stroke="#7a5d39" stroke-width="1" stroke-opacity=".85"/><path d="M17 20L24 13H53L46 20Z" fill="url(#gl39)" stroke="#887b62" stroke-width="1" stroke-opacity=".85"/><path d="M17 20H46V54H17Z" fill="url(#gl18)" stroke="#846946" stroke-width="1" stroke-opacity=".85"/><path d="M40 13V5H47" stroke="#929aa7" stroke-width="4" fill="none"/><path d="M40 13V5H47" stroke="#fff" stroke-width="1.6" fill="none"/><circle cx="31" cy="37" r="9" fill="url(#gr3)" stroke="#887b62" stroke-width="1" stroke-opacity=".85"/><path d="M31 28V46M22 37H40M25 31L37 43M37 31L25 43" stroke="#f7a93b" stroke-width="1.2" fill="none"/><rect x="19.5" y="22" width="2.4" height="30" rx="1.2" fill="#fff" fill-opacity="0.5" stroke="none"/><ellipse cx="31" cy="33" rx="4" ry="3" transform="rotate(-30 31 33)" fill="url(#hl)" fill-opacity="0.6" stroke="none"/></g></symbol>
+<symbol id="ic-coffee" viewBox="0 0 64 64"><ellipse cx="32" cy="59.2" rx="19" ry="2.8" fill="#0b1f3a" fill-opacity=".30" stroke="none" filter="url(#soft)"/><g stroke-linejoin="round" stroke-linecap="round"><ellipse cx="30" cy="55" rx="22" ry="3" fill="url(#gr40)" stroke="#727e92" stroke-width="1" stroke-opacity=".85"/><path d="M46 26H50Q57 26 57 33Q57 41 50 41H45" fill="none" stroke="#173957" stroke-opacity=".55" stroke-width="1.6"/><path d="M12 23H48V38Q48 52 30 52Q12 52 12 38Z" fill="url(#gl16)" stroke="#888f9e" stroke-width="1" stroke-opacity=".85"/><ellipse cx="30" cy="23" rx="18" ry="4.5" fill="url(#gr34)" stroke="#453739" stroke-width="1" stroke-opacity=".85"/><path d="M22 15Q26 11 22 7M32 15Q36 11 32 7M42 15Q46 11 42 7" stroke="#8a9bb0" stroke-width="1.8" fill="none"/><ellipse cx="18" cy="37" rx="3" ry="9" transform="rotate(8 18 37)" fill="url(#hl)" fill-opacity="0.8" stroke="none"/><ellipse cx="26" cy="22.2" rx="8" ry="1.3" fill="#fff" fill-fill="" fill-opacity=".3" stroke="none"/></g></symbol>
+<symbol id="ic-tea" viewBox="0 0 64 64"><ellipse cx="32" cy="59.2" rx="19" ry="2.8" fill="#0b1f3a" fill-opacity=".30" stroke="none" filter="url(#soft)"/><g stroke-linejoin="round" stroke-linecap="round"><ellipse cx="30" cy="55" rx="22" ry="3" fill="url(#gr40)" stroke="#727e92" stroke-width="1" stroke-opacity=".85"/><path d="M46 26H50Q57 26 57 33Q57 41 50 41H45" fill="none" stroke="#173957" stroke-opacity=".55" stroke-width="1.6"/><path d="M12 23H48V38Q48 52 30 52Q12 52 12 38Z" fill="url(#gl20)" stroke="#88898c" stroke-width="1" stroke-opacity=".85"/><ellipse cx="30" cy="23" rx="18" ry="4.5" fill="url(#gr41)" stroke="#547a64" stroke-width="1" stroke-opacity=".85"/><path d="M22 15Q26 11 22 7M32 15Q36 11 32 7M42 15Q46 11 42 7" stroke="#8a9bb0" stroke-width="1.8" fill="none"/><path d="M50 8C57 8 59 15 56 18C50 18 47 13 50 8Z" fill="url(#gl13)" stroke="#416f5c" stroke-width="1" stroke-opacity=".85"/><ellipse cx="18" cy="37" rx="3" ry="9" transform="rotate(8 18 37)" fill="url(#hl)" fill-opacity="0.8" stroke="none"/><ellipse cx="26" cy="22.2" rx="8" ry="1.3" fill="#fff" fill-fill="" fill-opacity=".3" stroke="none"/></g></symbol>
+<symbol id="ic-adobo" viewBox="0 0 64 64"><ellipse cx="32" cy="59.2" rx="19" ry="2.8" fill="#0b1f3a" fill-opacity=".30" stroke="none" filter="url(#soft)"/><g stroke-linejoin="round" stroke-linecap="round"><g filter="url(#g2)"><path d="M8 30H56C56 46 46 56 32 56C18 56 8 46 8 30Z" fill="url(#gl20)" stroke="#88898c" stroke-width="1" stroke-opacity=".85"/><path d="M10 30C12 19 52 19 54 30Z" fill="url(#gl42)" stroke="#534341" stroke-width="1" stroke-opacity=".85"/><ellipse cx="22" cy="27" rx="6" ry="4.5" fill="url(#gr43)" stroke="#68534d" stroke-width="1" stroke-opacity=".85"/><ellipse cx="34" cy="24" rx="6" ry="4.5" fill="url(#gr44)" stroke="#5f4c47" stroke-width="1" stroke-opacity=".85"/><ellipse cx="46" cy="27" rx="5" ry="4" fill="url(#gr43)" stroke="#68534d" stroke-width="1" stroke-opacity=".85"/><path d="M28 30Q36 26 40 31Q34 35 28 30Z" fill="url(#gl13)" stroke="#416f5c" stroke-width="1" stroke-opacity=".85"/><path d="M8 40H56" stroke="#e8605a" stroke-width="2.5" fill="none"/></g><ellipse cx="16" cy="44" rx="2.4" ry="6" transform="rotate(20 16 44)" fill="url(#hl)" fill-opacity="0.6" stroke="none"/></g></symbol>
+<symbol id="ic-sisig" viewBox="0 0 64 64"><ellipse cx="32" cy="59.2" rx="24" ry="2.8" fill="#0b1f3a" fill-opacity=".30" stroke="none" filter="url(#soft)"/><g stroke-linejoin="round" stroke-linecap="round"><g filter="url(#g2)"><path d="M6 44H58V50H6Z" fill="url(#gl45)" stroke="#68534d" stroke-width="1" stroke-opacity=".85"/><path d="M8 38Q32 24 56 38Q32 52 8 38Z" fill="url(#gl46)" stroke="#303e55" stroke-width="1" stroke-opacity=".85"/><path d="M17 36Q32 20 47 36Q32 43 17 36Z" fill="url(#gl47)" stroke="#6e5b54" stroke-width="1" stroke-opacity=".85"/><circle cx="32" cy="29" r="6" fill="url(#gr28)" stroke="#888f9e" stroke-width="1" stroke-opacity=".85"/><circle cx="32" cy="29" r="3" fill="url(#gr48)" stroke-width="1" stroke="#887b48" stroke-opacity=".85"/><circle cx="23" cy="35" r="1.8" fill="url(#gr49)" stroke="none"/><circle cx="41" cy="35" r="1.8" fill="url(#gr49)" stroke="none"/><path d="M22 18Q26 14 22 10M42 18Q46 14 42 10" stroke="#8a9bb0" stroke-width="1.8" fill="none"/></g><ellipse cx="26" cy="36" rx="14" ry="1.6" transform="rotate(-4 26 36)" fill="url(#hl)" fill-opacity="0.4" stroke="none"/></g></symbol>
+<symbol id="ic-pancit" viewBox="0 0 64 64"><ellipse cx="32" cy="59.2" rx="24" ry="2.8" fill="#0b1f3a" fill-opacity=".30" stroke="none" filter="url(#soft)"/><g stroke-linejoin="round" stroke-linecap="round"><g filter="url(#g1)"><ellipse cx="32" cy="42" rx="25" ry="11" fill="url(#gr28)" stroke="#888f9e" stroke-width="1" stroke-opacity=".85"/><ellipse cx="32" cy="41" rx="17" ry="7" fill="url(#gr50)" stroke-width="1" stroke="#858a93" stroke-opacity=".85"/><path d="M16 36Q20 22 25 34T34 34T43 34T49 36" stroke="#8e6e45" stroke-width="5" fill="none"/><path d="M16 36Q20 22 25 34T34 34T43 34T49 36" stroke="#f7a93b" stroke-width="3" fill="none"/><path d="M22 30Q30 20 40 30" stroke="#ffd27a" stroke-width="3" fill="none"/><circle cx="30" cy="31" r="1.6" fill="url(#gr49)" stroke="none"/><circle cx="40" cy="33" r="1.6" fill="url(#gr49)" stroke="none"/><path d="M48 24Q56 24 56 32Q48 32 48 24Z" fill="url(#gl17)" stroke="#887b48" stroke-width="1" stroke-opacity=".85"/></g><ellipse cx="18" cy="42" rx="7" ry="2" transform="rotate(-8 18 42)" fill="url(#hl)" fill-opacity="0.6" stroke="none"/></g></symbol>
+<symbol id="ic-lumpia" viewBox="0 0 64 64"><ellipse cx="32" cy="59.2" rx="19" ry="2.8" fill="#0b1f3a" fill-opacity=".30" stroke="none" filter="url(#soft)"/><g stroke-linejoin="round" stroke-linecap="round"><g filter="url(#g2)"><g transform="rotate(-18 32 30)"><rect x="8" y="14" width="46" height="13" rx="6.5" fill="url(#gl51)" stroke="#7d6646" stroke-width="1" stroke-opacity=".85"/><rect x="8" y="30" width="46" height="13" rx="6.5" fill="url(#gl2)" stroke="#775b3f" stroke-width="1" stroke-opacity=".85"/></g><circle cx="46" cy="49" r="8" fill="url(#gr21)" stroke="#7d4854" stroke-width="1" stroke-opacity=".85"/><ellipse cx="46" cy="47" rx="8" ry="3" fill="url(#gr52)" stroke-width="1" stroke="#81545f" stroke-opacity=".85"/><path d="M12 22L48 14M16 42L52 34" stroke="#ffd27a" stroke-width="1.5" fill="none"/></g></g></symbol>
+<symbol id="ic-sinigang" viewBox="0 0 64 64"><ellipse cx="32" cy="59.2" rx="19" ry="2.8" fill="#0b1f3a" fill-opacity=".30" stroke="none" filter="url(#soft)"/><g stroke-linejoin="round" stroke-linecap="round"><path d="M8 32H56C56 47 46 56 32 56C18 56 8 47 8 32Z" fill="url(#gl8)" stroke="#2f6295" stroke-width="1" stroke-opacity=".85"/><ellipse cx="32" cy="32" rx="24" ry="6" fill="url(#gr53)" stroke="#7e7a74" stroke-width="1" stroke-opacity=".85"/><circle cx="24" cy="31" r="4" fill="url(#gr21)" stroke-width="1" stroke="#7d4854" stroke-opacity=".85"/><path d="M33 30Q38 27 42 31Q37 34 33 30Z" fill="url(#gl13)" stroke-width="1" stroke="#416f5c" stroke-opacity=".85"/><circle cx="46" cy="32" r="2" fill="url(#gr49)" stroke="none"/><path d="M22 22Q26 18 22 14M32 22Q36 18 32 14M42 22Q46 18 42 14" stroke="#8a9bb0" stroke-width="1.8" fill="none"/><path d="M12 44H52" stroke="#8bd5ff" stroke-width="2.5" fill="none"/><ellipse cx="16" cy="45" rx="2.4" ry="6" transform="rotate(20 16 45)" fill="url(#hl)" fill-opacity="0.5" stroke="none"/><ellipse cx="30" cy="31" rx="8" ry="1.4" transform="rotate(0 30 31)" fill="url(#hl)" fill-opacity="0.5" stroke="none"/></g></symbol>
+<symbol id="ic-t-shirts" viewBox="0 0 64 64"><ellipse cx="32" cy="59.2" rx="19" ry="2.8" fill="#0b1f3a" fill-opacity=".30" stroke="none" filter="url(#soft)"/><g stroke-linejoin="round" stroke-linecap="round"><g filter="url(#g2)"><path d="M22 9C24 15 40 15 42 9L56 17L50 30L44 27V54H20V27L14 30L8 17Z" fill="url(#gl8)" stroke="#2f6295" stroke-width="1" stroke-opacity=".85"/><path d="M22 9C24 15 40 15 42 9" fill="url(#gl54)" stroke="#1f4880" stroke-width="1" stroke-opacity=".85"/><path d="M20 36H44" stroke="#8bd5ff" stroke-width="1.5" fill="none"/></g></g></symbol>
+<symbol id="ic-polo-shirts" viewBox="0 0 64 64"><ellipse cx="32" cy="59.2" rx="19" ry="2.8" fill="#0b1f3a" fill-opacity=".30" stroke="none" filter="url(#soft)"/><g stroke-linejoin="round" stroke-linecap="round"><g filter="url(#g2)"><path d="M22 9C24 15 40 15 42 9L56 17L50 30L44 27V54H20V27L14 30L8 17Z" fill="url(#gl15)" stroke="#7d4854" stroke-width="1" stroke-opacity=".85"/><path d="M22 9C24 15 40 15 42 9" fill="url(#gl32)" stroke="#683946" stroke-width="1" stroke-opacity=".85"/><path d="M22 9L32 22L42 9" fill="url(#gl16)" stroke="#888f9e" stroke-width="1" stroke-opacity=".85"/><path d="M32 22V34" fill="none" stroke="#173957" stroke-opacity=".55" stroke-width="1.6"/><circle cx="32" cy="27" r="1.2" fill="url(#gr9)" stroke="#1f3653" stroke-width="1" stroke-opacity=".85"/><circle cx="32" cy="32" r="1.2" fill="url(#gr9)" stroke="#1f3653" stroke-width="1" stroke-opacity=".85"/></g></g></symbol>
+<symbol id="ic-hoodies" viewBox="0 0 64 64"><ellipse cx="32" cy="59.2" rx="19" ry="2.8" fill="#0b1f3a" fill-opacity=".30" stroke="none" filter="url(#soft)"/><g stroke-linejoin="round" stroke-linecap="round"><g filter="url(#g2)"><path d="M22 12C22 4 42 4 42 12L56 20L50 33L44 30V56H20V30L14 33L8 20Z" fill="url(#gl37)" stroke="#534f97" stroke-width="1" stroke-opacity=".85"/><path d="M23 12C24 22 40 22 41 12C41 7 23 7 23 12Z" fill="url(#gl55)" stroke="#454082" stroke-width="1" stroke-opacity=".85"/><path d="M27 20V30M37 20V30" stroke="#fff" stroke-width="2" fill="none"/><path d="M24 40H40L42 50H22Z" fill="url(#gl56)" stroke="#4c4790" stroke-width="1" stroke-opacity=".85"/></g></g></symbol>
+<symbol id="ic-jackets" viewBox="0 0 64 64"><ellipse cx="32" cy="59.2" rx="19" ry="2.8" fill="#0b1f3a" fill-opacity=".30" stroke="none" filter="url(#soft)"/><g stroke-linejoin="round" stroke-linecap="round"><g filter="url(#g2)"><path d="M22 8C24 13 40 13 42 8L54 13L59 47L51 49L48 26V56H16V26L13 49L5 47L10 13Z" fill="url(#gl57)" stroke="#2a4f56" stroke-width="1" stroke-opacity=".85"/><path d="M22 8L32 19L42 8" fill="url(#gl58)" stroke="#25454e" stroke-width="1" stroke-opacity=".85"/><path d="M32 19V56" stroke="#fff" stroke-width="1.8" fill="none"/><path d="M20 42H27M37 42H44" stroke="#1c4538" stroke-width="2" fill="none"/><path d="M5 47L13 49M59 47L51 49" stroke="#1c4538" stroke-width="3" fill="none"/><circle cx="32" cy="30" r="1.4" fill="url(#gr48)" stroke="none"/></g></g></symbol>
+<symbol id="ic-pajamas" viewBox="0 0 64 64"><ellipse cx="32" cy="59.2" rx="19" ry="2.8" fill="#0b1f3a" fill-opacity=".30" stroke="none" filter="url(#soft)"/><g stroke-linejoin="round" stroke-linecap="round"><g filter="url(#g2)"><path d="M22 9C24 15 40 15 42 9L56 17L50 30L44 27V54H20V27L14 30L8 17Z" fill="url(#gl59)" stroke="#885d75" stroke-width="1" stroke-opacity=".85"/><path d="M22 9C24 15 40 15 42 9" fill="url(#gl60)" stroke="#7a4a65" stroke-width="1" stroke-opacity=".85"/><path d="M26 28L27.5 31.5L31 33L27.5 34.5L26 38L24.5 34.5L21 33L24.5 31.5Z" fill="url(#gl17)" stroke-width="1" stroke="#887b48" stroke-opacity=".85"/><path d="M38 40L39 42L41 43L39 44L38 46L37 44L35 43L37 42Z" fill="url(#gl17)" stroke-width="1" stroke="#887b48" stroke-opacity=".85"/></g></g></symbol>
+<symbol id="ic-dresses" viewBox="0 0 64 64"><ellipse cx="32" cy="59.2" rx="18" ry="2.8" fill="#0b1f3a" fill-opacity=".30" stroke="none" filter="url(#soft)"/><g stroke-linejoin="round" stroke-linecap="round"><g filter="url(#g2)"><path d="M24 6L28 14H36L40 6L42 26L55 55H9L22 26Z" fill="url(#gl59)" stroke="#885d75" stroke-width="1" stroke-opacity=".85"/><path d="M22 26H42V32H22Z" fill="url(#gl39)" stroke="#887b62" stroke-width="1" stroke-opacity=".85"/><path d="M20 55L26 36M32 55V36M44 55L38 36" stroke="#e0647f" stroke-width="1.5" fill="none"/></g></g></symbol>
+<symbol id="ic-jeans" viewBox="0 0 64 64"><ellipse cx="32" cy="59.2" rx="14" ry="2.8" fill="#0b1f3a" fill-opacity=".30" stroke="none" filter="url(#soft)"/><g stroke-linejoin="round" stroke-linecap="round"><g filter="url(#g2)"><path d="M17 7H47L49 57H35L32 27L29 57H15Z" fill="url(#gl61)" stroke="#2f4e77" stroke-width="1" stroke-opacity=".85"/><path d="M17 14H47" stroke="#8fb4de" fill="none"/><path d="M32 14V27" stroke="#8fb4de" fill="none"/><path d="M20 20Q24 20 24 25" stroke="#f7a93b" stroke-width="1.5" fill="none"/><path d="M44 20Q40 20 40 25" stroke="#f7a93b" stroke-width="1.5" fill="none"/></g></g></symbol>
+<symbol id="ic-shorts" viewBox="0 0 64 64"><ellipse cx="32" cy="59.2" rx="17" ry="2.8" fill="#0b1f3a" fill-opacity=".30" stroke="none" filter="url(#soft)"/><g stroke-linejoin="round" stroke-linecap="round"><g filter="url(#g2)"><path d="M15 10H49L53 42H35L32 29L29 42H11Z" fill="url(#gl62)" stroke="#776f61" stroke-width="1" stroke-opacity=".85"/><path d="M15 17H49" stroke="#b5935a" fill="none"/><path d="M32 17V29" stroke="#b5935a" fill="none"/><path d="M19 24Q24 24 24 30" stroke="#b5935a" stroke-width="1.5" fill="none"/></g></g></symbol>
+<symbol id="ic-shoes" viewBox="0 0 64 64"><ellipse cx="32" cy="59.2" rx="25" ry="2.8" fill="#0b1f3a" fill-opacity=".30" stroke="none" filter="url(#soft)"/><g stroke-linejoin="round" stroke-linecap="round"><path d="M6 34L16 34C22 34 24 28 26 24L32 28C36 32 42 34 50 36C56 38 58 42 58 46V48H6Z" fill="url(#gl15)" stroke="#7d4854" stroke-width="1" stroke-opacity=".85"/><path d="M6 46H58V52Q58 54 56 54H8Q6 54 6 52Z" fill="url(#gl16)" stroke="#888f9e" stroke-width="1" stroke-opacity=".85"/><path d="M28 28L31 24M33 31L36 27M38 34L41 30" stroke="#fff" stroke-width="2" fill="none"/><path d="M48 37Q56 38 57 45" stroke="#b8403b" stroke-width="1.5" fill="none"/><ellipse cx="14" cy="40" rx="6" ry="2.2" transform="rotate(-8 14 40)" fill="url(#hl)" fill-opacity="0.7" stroke="none"/></g></symbol>
+<symbol id="ic-sneakers" viewBox="0 0 64 64"><ellipse cx="32" cy="59.2" rx="25" ry="2.8" fill="#0b1f3a" fill-opacity=".30" stroke="none" filter="url(#soft)"/><g stroke-linejoin="round" stroke-linecap="round"><path d="M6 34L16 34C22 34 24 28 26 24L32 28C36 32 42 34 50 36C56 38 58 42 58 46V48H6Z" fill="url(#gl16)" stroke="#888f9e" stroke-width="1" stroke-opacity=".85"/><path d="M6 46H58V52Q58 54 56 54H8Q6 54 6 52Z" fill="url(#gl8)" stroke="#2f6295" stroke-width="1" stroke-opacity=".85"/><path d="M28 28L31 24M33 31L36 27M38 34L41 30" stroke="#3b9bea" stroke-width="2" fill="none"/><path d="M10 44L22 36L30 44" stroke="#3b9bea" stroke-width="3" fill="none"/><ellipse cx="14" cy="40" rx="6" ry="2.2" transform="rotate(-8 14 40)" fill="url(#hl)" fill-opacity="0.8" stroke="none"/></g></symbol>
+<symbol id="ic-boots" viewBox="0 0 64 64"><ellipse cx="32" cy="59.2" rx="22" ry="2.8" fill="#0b1f3a" fill-opacity=".30" stroke="none" filter="url(#soft)"/><g stroke-linejoin="round" stroke-linecap="round"><g filter="url(#g1)"><path d="M16 8H34V30C44 32 55 35 56 44V50H14V8Z" fill="url(#gl45)" stroke="#68534d" stroke-width="1" stroke-opacity=".85"/><path d="M14 46H56V53Q56 55 54 55H16Q14 55 14 53Z" fill="url(#gl42)" stroke="#534341" stroke-width="1" stroke-opacity=".85"/><path d="M16 14H34" stroke="#8a5530" stroke-width="2.5" fill="none"/><path d="M26 22L30 22M26 27L30 27" stroke="#fff1d6" stroke-width="2" fill="none"/></g><rect x="18" y="12" width="2.6" height="28" rx="1.3" fill="#fff" fill-opacity="0.35" stroke="none"/></g></symbol>
+<symbol id="ic-sandals" viewBox="0 0 64 64"><ellipse cx="32" cy="59.2" rx="10" ry="2.8" fill="#0b1f3a" fill-opacity=".30" stroke="none" filter="url(#soft)"/><g stroke-linejoin="round" stroke-linecap="round"><path d="M24 5C35 5 41 13 41 24C41 35 39 45 37 53C35 60 27 60 25 53C21 44 16 34 16 22C16 12 18 5 24 5Z" fill="url(#gl18)" stroke="#846946" stroke-width="1" stroke-opacity=".85"/><path d="M17 20Q28 12 40 21V28Q28 20 18 28Z" fill="url(#gl8)" stroke="#2f6295" stroke-width="1" stroke-opacity=".85"/><path d="M19 38Q29 33 38 38V44Q29 39 20 44Z" fill="url(#gl8)" stroke="#2f6295" stroke-width="1" stroke-opacity=".85"/><circle cx="39" cy="40" r="3" fill="url(#gr48)" stroke-width="1" stroke="#887b48" stroke-opacity=".85"/><ellipse cx="21" cy="28" rx="2" ry="9" transform="rotate(-8 21 28)" fill="url(#hl)" fill-opacity="0.4" stroke="none"/></g></symbol>
+<symbol id="ic-slippers" viewBox="0 0 64 64"><ellipse cx="32" cy="59.2" rx="10" ry="2.8" fill="#0b1f3a" fill-opacity=".30" stroke="none" filter="url(#soft)"/><g stroke-linejoin="round" stroke-linecap="round"><path d="M24 7C35 7 41 15 41 26C41 37 39 45 37 52C35 58 27 58 25 52C21 44 16 35 16 24C16 14 18 7 24 7Z" fill="url(#gl8)" stroke="#2f6295" stroke-width="1" stroke-opacity=".85"/><path d="M26 17L32 35M38 17L32 35" stroke="#929aa7" stroke-width="6" fill="none"/><path d="M26 17L32 35M38 17L32 35" stroke="#fff" stroke-width="3" fill="none"/><ellipse cx="22" cy="20" rx="2" ry="8" transform="rotate(-8 22 20)" fill="url(#hl)" fill-opacity="0.5" stroke="none"/></g></symbol>
+<symbol id="ic-bags" viewBox="0 0 64 64"><ellipse cx="32" cy="59.2" rx="19" ry="2.8" fill="#0b1f3a" fill-opacity=".30" stroke="none" filter="url(#soft)"/><g stroke-linejoin="round" stroke-linecap="round"><path d="M24 22V16Q24 9 32 9Q40 9 40 16V22" fill="none" stroke="#173957" stroke-opacity=".55" stroke-width="1.6"/><path d="M13 22H51L53 55H11Z" fill="url(#gl37)" stroke="#534f97" stroke-width="1" stroke-opacity=".85"/><path d="M13 30H51" stroke="#6b4fc0" stroke-width="1.8" fill="none"/><circle cx="32" cy="38" r="4" fill="url(#gr3)" stroke="#887b62" stroke-width="1" stroke-opacity=".85"/><ellipse cx="20" cy="38" rx="2.6" ry="8" transform="rotate(4 20 38)" fill="url(#hl)" fill-opacity="0.35" stroke="none"/></g></symbol>
+<symbol id="ic-backpacks" viewBox="0 0 64 64"><ellipse cx="32" cy="59.2" rx="19" ry="2.8" fill="#0b1f3a" fill-opacity=".30" stroke="none" filter="url(#soft)"/><g stroke-linejoin="round" stroke-linecap="round"><g filter="url(#g1)"><path d="M26 11Q26 5 32 5Q38 5 38 11" fill="none" stroke="#173957" stroke-opacity=".55" stroke-width="1.6"/><path d="M15 20Q15 10 32 10Q49 10 49 20V52Q49 56 45 56H19Q15 56 15 52Z" fill="url(#gl8)" stroke="#2f6295" stroke-width="1" stroke-opacity=".85"/><path d="M21 35H43V50H21Z" fill="url(#gl54)" stroke="#1f4880" stroke-width="1" stroke-opacity=".85"/><path d="M21 35H43" stroke="#8bd5ff" stroke-width="1.8" fill="none"/><path d="M24 22H40" stroke="#8bd5ff" stroke-width="2.5" fill="none"/><circle cx="32" cy="42" r="2" fill="url(#gr3)" stroke-width="1" stroke="#887b62" stroke-opacity=".85"/></g><ellipse cx="21" cy="22" rx="2.6" ry="8" transform="rotate(0 21 22)" fill="url(#hl)" fill-opacity="0.45" stroke="none"/></g></symbol>
+<symbol id="ic-handbags" viewBox="0 0 64 64"><ellipse cx="32" cy="59.2" rx="19" ry="2.8" fill="#0b1f3a" fill-opacity=".30" stroke="none" filter="url(#soft)"/><g stroke-linejoin="round" stroke-linecap="round"><path d="M20 28Q20 9 32 9Q44 9 44 28" fill="none" stroke="#173957" stroke-opacity=".55" stroke-width="1.6"/><path d="M9 28H55L50 55H14Z" fill="url(#gl59)" stroke="#885d75" stroke-width="1" stroke-opacity=".85"/><path d="M9 28H55" stroke="#e0647f" stroke-width="2" fill="none"/><circle cx="32" cy="38" r="4" fill="url(#gr3)" stroke="#887b62" stroke-width="1" stroke-opacity=".85"/><path d="M32 34V42M28 38H36" stroke-width="0.96" fill="none" stroke="#173957" stroke-opacity=".55"/><ellipse cx="19" cy="42" rx="2.6" ry="8" transform="rotate(6 19 42)" fill="url(#hl)" fill-opacity="0.45" stroke="none"/></g></symbol>
+<symbol id="ic-wallets" viewBox="0 0 64 64"><ellipse cx="32" cy="59.2" rx="24" ry="2.8" fill="#0b1f3a" fill-opacity=".30" stroke="none" filter="url(#soft)"/><g stroke-linejoin="round" stroke-linecap="round"><g filter="url(#g1)"><path d="M8 18H52Q57 18 57 23V50Q57 55 52 55H12Q7 55 7 50V19Q7 18 8 18Z" fill="url(#gl45)" stroke="#68534d" stroke-width="1" stroke-opacity=".85"/><path d="M7 26H57" stroke="#8a5530" stroke-width="2" fill="none"/><path d="M42 33H57V45H42Q37 45 37 39Q37 33 42 33Z" fill="url(#gl39)" stroke="#887b62" stroke-width="1" stroke-opacity=".85"/><circle cx="43" cy="39" r="2" fill="url(#gr9)" stroke="none"/><path d="M12 14L40 8L44 18" fill="url(#gl42)" stroke-width="1" stroke="#534341" stroke-opacity=".85"/></g><ellipse cx="20" cy="40" rx="6" ry="2" transform="rotate(0 20 40)" fill="url(#hl)" fill-opacity="0.35" stroke="none"/></g></symbol>
+<symbol id="ic-accessories" viewBox="0 0 64 64"><ellipse cx="32" cy="59.2" rx="19" ry="2.8" fill="#0b1f3a" fill-opacity=".30" stroke="none" filter="url(#soft)"/><g stroke-linejoin="round" stroke-linecap="round"><path d="M19 13H45L55 26L32 55L9 26Z" fill="url(#gl25)" stroke="#537c9e" stroke-width="1" stroke-opacity=".85"/><path d="M9 26H55M19 13L25 26L32 55L39 26L45 13M25 26L32 13L39 26" stroke-width="1.28" fill="none" stroke="#173957" stroke-opacity=".55"/><path d="M14 8L16 12M50 8L48 12" stroke="#f7a93b" stroke-width="2.5" fill="none"/><path d="M19 14L30 14L26 26L12 26Z" fill="#fff" fill-opacity="0.5" stroke="none"/></g></symbol>
+<symbol id="ic-caps" viewBox="0 0 64 64"><ellipse cx="32" cy="59.2" rx="19" ry="2.8" fill="#0b1f3a" fill-opacity=".30" stroke="none" filter="url(#soft)"/><g stroke-linejoin="round" stroke-linecap="round"><g filter="url(#g2)"><path d="M9 38C9 20 21 12 34 14C47 16 54 26 54 38Z" fill="url(#gl15)" stroke="#7d4854" stroke-width="1" stroke-opacity=".85"/><path d="M34 14Q36 26 34 38" stroke="#b8403b" stroke-width="1.6" fill="none"/><path d="M9 38H54C60 38 61 43 58 45C54 47 44 46 38 46H16C10 46 8 42 9 38Z" fill="url(#gl32)" stroke="#683946" stroke-width="1" stroke-opacity=".85"/><circle cx="32" cy="13" r="2.5" fill="url(#gr63)" stroke="#683946" stroke-width="1" stroke-opacity=".85"/></g><ellipse cx="24" cy="22" rx="6" ry="3" transform="rotate(-25 24 22)" fill="url(#hl)" fill-opacity="0.6" stroke="none"/></g></symbol>
+<symbol id="ic-watches" viewBox="0 0 64 64"><ellipse cx="32" cy="59.2" rx="11" ry="2.8" fill="#0b1f3a" fill-opacity=".30" stroke="none" filter="url(#soft)"/><g stroke-linejoin="round" stroke-linecap="round"><path d="M23 3H41L43 17H21Z" fill="url(#gl8)" stroke="#2f6295" stroke-width="1" stroke-opacity=".85"/><path d="M21 47H43L41 61H23Z" fill="url(#gl8)" stroke="#2f6295" stroke-width="1" stroke-opacity=".85"/><circle cx="32" cy="32" r="17" fill="url(#gr40)" stroke="#727e92" stroke-width="1" stroke-opacity=".85"/><circle cx="32" cy="32" r="13" fill="url(#gr28)" stroke="#888f9e" stroke-width="1" stroke-opacity=".85"/><path d="M32 32V23M32 32L39 36" stroke-width="1.76" fill="none" stroke="#173957" stroke-opacity=".55"/><circle cx="32" cy="32" r="1.5" fill="url(#gr9)" stroke="#1f3653" stroke-width="1" stroke-opacity=".85"/><path d="M32 21V22M32 42V43M21 32H22M42 32H43" stroke-width="1.2" fill="none" stroke="#173957" stroke-opacity=".55"/><path d="M49 30H53V34H49Z" fill="url(#gl18)" stroke="#846946" stroke-width="1" stroke-opacity=".85"/><path d="M22 26A12 12 0 0 1 36 21L22 36Z" fill="#fff" fill-opacity="0.5" stroke="none"/></g></symbol>
+<symbol id="ic-sunglasses" viewBox="0 0 64 64"><ellipse cx="32" cy="59.2" rx="25" ry="2.8" fill="#0b1f3a" fill-opacity=".30" stroke="none" filter="url(#soft)"/><g stroke-linejoin="round" stroke-linecap="round"><path d="M5 22H59" fill="none" stroke="#173957" stroke-opacity=".55" stroke-width="1.6"/><path d="M6 24H29V34Q29 46 18 46Q6 46 6 34Z" fill="url(#gl64)" stroke="#26365c" stroke-width="1" stroke-opacity=".85"/><path d="M35 24H58V34Q58 46 46 46Q35 46 35 34Z" fill="url(#gl64)" stroke="#26365c" stroke-width="1" stroke-opacity=".85"/><path d="M29 28Q32 24 35 28" fill="none" stroke="#173957" stroke-opacity=".55" stroke-width="1.6"/><path d="M11 29L16 28M40 29L45 28" stroke="#8bd5ff" stroke-width="2.2" fill="none"/><ellipse cx="14" cy="31" rx="4" ry="1.6" transform="rotate(-20 14 31)" fill="url(#hl)" fill-opacity="0.7" stroke="none"/><ellipse cx="43" cy="31" rx="4" ry="1.6" transform="rotate(-20 43 31)" fill="url(#hl)" fill-opacity="0.7" stroke="none"/></g></symbol>
+<symbol id="ic-belts" viewBox="0 0 64 64"><ellipse cx="32" cy="59.2" rx="27" ry="2.8" fill="#0b1f3a" fill-opacity=".30" stroke="none" filter="url(#soft)"/><g stroke-linejoin="round" stroke-linecap="round"><g filter="url(#g1)"><path d="M4 25H60V41H4Z" fill="url(#gl42)" stroke="#534341" stroke-width="1" stroke-opacity=".85"/><circle cx="12" cy="33" r="1.6" fill="url(#gr9)" stroke="none"/><circle cx="19" cy="33" r="1.6" fill="url(#gr9)" stroke="none"/><circle cx="26" cy="33" r="1.6" fill="url(#gr9)" stroke="none"/><path d="M40 19H54V47H40Z" fill="none" stroke="#928347" stroke-width="8"/><path d="M40 19H54V47H40Z" fill="none" stroke="#ffd23f" stroke-width="4"/><path d="M34 33H48" stroke-width="2.0" fill="none" stroke="#173957" stroke-opacity=".55"/></g><ellipse cx="14" cy="29" rx="6" ry="1.5" transform="rotate(0 14 29)" fill="url(#hl)" fill-opacity="0.4" stroke="none"/></g></symbol>
+<symbol id="ic-jewelry" viewBox="0 0 64 64"><ellipse cx="32" cy="59.2" rx="19" ry="2.8" fill="#0b1f3a" fill-opacity=".30" stroke="none" filter="url(#soft)"/><g stroke-linejoin="round" stroke-linecap="round"><path d="M10 10Q32 58 54 10" stroke="#928347" stroke-width="4.5" fill="none"/><path d="M10 10Q32 58 54 10" stroke="#ffd23f" stroke-width="2.2" fill="none"/><path d="M32 31L40 40L32 52L24 40Z" fill="url(#gl25)" stroke="#537c9e" stroke-width="1" stroke-opacity=".85"/><path d="M24 40H40M32 31L29 40L32 52L35 40Z" stroke-width="1.04" fill="none" stroke="#173957" stroke-opacity=".55"/><ellipse cx="30" cy="38" rx="1.8" ry="3" transform="rotate(0 30 38)" fill="url(#hl)" fill-opacity="0.9" stroke="none"/></g></symbol>
+<symbol id="ic-home-decor" viewBox="0 0 64 64"><ellipse cx="32" cy="59.2" rx="19" ry="2.8" fill="#0b1f3a" fill-opacity=".30" stroke="none" filter="url(#soft)"/><g stroke-linejoin="round" stroke-linecap="round"><path d="M32 28C30 18 24 12 16 12C16 22 22 28 32 28Z" fill="url(#gl13)" stroke="#416f5c" stroke-width="1" stroke-opacity=".85"/><path d="M32 28C34 16 42 10 50 10C50 22 42 28 32 28Z" fill="url(#gl65)" stroke="#315e4f" stroke-width="1" stroke-opacity=".85"/><path d="M32 30V22" fill="none" stroke="#173957" stroke-opacity=".55" stroke-width="1.6"/><path d="M24 30H40V34Q50 40 44 52Q42 56 38 56H26Q22 56 20 52Q14 40 24 34Z" fill="url(#gl37)" stroke="#534f97" stroke-width="1" stroke-opacity=".85"/><path d="M22 44H42" stroke="#8bd5ff" stroke-width="2.5" fill="none"/><ellipse cx="26" cy="43" rx="2.4" ry="7" transform="rotate(6 26 43)" fill="url(#hl)" fill-opacity="0.5" stroke="none"/></g></symbol>
+<symbol id="ic-bed-sheets" viewBox="0 0 64 64"><ellipse cx="32" cy="59.2" rx="27" ry="2.8" fill="#0b1f3a" fill-opacity=".30" stroke="none" filter="url(#soft)"/><g stroke-linejoin="round" stroke-linecap="round"><g filter="url(#g1)"><path d="M5 50H59V56H5Z" fill="url(#gl45)" stroke="#68534d" stroke-width="1" stroke-opacity=".85"/><path d="M5 34H59V50H5Z" fill="url(#gl25)" stroke="#537c9e" stroke-width="1" stroke-opacity=".85"/><path d="M8 26Q8 22 14 22H26Q31 22 31 28V34H8Z" fill="url(#gl16)" stroke="#888f9e" stroke-width="1" stroke-opacity=".85"/><path d="M26 34H59V50H26Z" fill="url(#gl8)" stroke="#2f6295" stroke-width="1" stroke-opacity=".85"/><path d="M26 40H59" stroke="#8bd5ff" stroke-width="2" fill="none"/><path d="M5 20V56M59 34V56" fill="none" stroke="#173957" stroke-opacity=".55" stroke-width="1.6"/></g></g></symbol>
+<symbol id="ic-towels" viewBox="0 0 64 64"><ellipse cx="32" cy="59.2" rx="23" ry="2.8" fill="#0b1f3a" fill-opacity=".30" stroke="none" filter="url(#soft)"/><g stroke-linejoin="round" stroke-linecap="round"><g filter="url(#g2)"><rect x="9" y="40" width="46" height="13" rx="4" fill="url(#gl66)" stroke="#236f71" stroke-width="1" stroke-opacity=".85"/><path d="M16 40V53M48 40V53" stroke="#fff" stroke-width="2.5" fill="none"/><rect x="11" y="27" width="42" height="13" rx="4" fill="url(#gl16)" stroke="#888f9e" stroke-width="1" stroke-opacity=".85"/><path d="M18 27V40M46 27V40" stroke="#8bd5ff" stroke-width="2.5" fill="none"/><rect x="13" y="14" width="38" height="13" rx="4" fill="url(#gl59)" stroke="#885d75" stroke-width="1" stroke-opacity=".85"/><path d="M20 14V27M44 14V27" stroke="#fff" stroke-width="2.5" fill="none"/></g></g></symbol>
+<symbol id="ic-curtains" viewBox="0 0 64 64"><ellipse cx="32" cy="59.2" rx="24" ry="2.8" fill="#0b1f3a" fill-opacity=".30" stroke="none" filter="url(#soft)"/><g stroke-linejoin="round" stroke-linecap="round"><g filter="url(#g2)"><path d="M4 9H60" stroke-width="2.4" fill="none" stroke="#173957" stroke-opacity=".55"/><path d="M8 11H29C29 28 23 40 25 56H8Z" fill="url(#gl59)" stroke="#885d75" stroke-width="1" stroke-opacity=".85"/><path d="M56 11H35C35 28 41 40 39 56H56Z" fill="url(#gl59)" stroke="#885d75" stroke-width="1" stroke-opacity=".85"/><path d="M14 12V55M20 12V50M50 12V55M44 12V50" stroke="#e0647f" stroke-width="1.4" fill="none"/><path d="M26 34H31M33 34H38" stroke="#ffd23f" stroke-width="3" fill="none"/></g></g></symbol>
+<symbol id="ic-kitchenware" viewBox="0 0 64 64"><ellipse cx="32" cy="59.2" rx="19" ry="2.8" fill="#0b1f3a" fill-opacity=".30" stroke="none" filter="url(#soft)"/><g stroke-linejoin="round" stroke-linecap="round"><path d="M5 33H12M52 33H59" stroke="#7a8699" stroke-width="7" fill="none"/><path d="M5 33H12M52 33H59" stroke="#cfd8e3" stroke-width="3.5" fill="none"/><path d="M12 27H52V48Q52 55 45 55H19Q12 55 12 48Z" fill="url(#gl26)" stroke="#727e92" stroke-width="1" stroke-opacity=".85"/><path d="M9 22H55V27H9Z" fill="url(#gl67)" stroke="#53627b" stroke-width="1" stroke-opacity=".85"/><path d="M28 14H36V22H28Z" fill="url(#gl15)" stroke="#7d4854" stroke-width="1" stroke-opacity=".85"/><path d="M18 33V45" stroke="#fff" stroke-width="2.5" stroke-opacity=".8" fill="none"/><rect x="16" y="30" width="2.6" height="18" rx="1.3" fill="#fff" fill-opacity="0.5" stroke="none"/><ellipse cx="40" cy="51" rx="7" ry="1.4" transform="rotate(0 40 51)" fill="url(#hl)" fill-opacity="0.4" stroke="none"/></g></symbol>
+<symbol id="ic-electronics" viewBox="0 0 64 64"><ellipse cx="32" cy="59.2" rx="26" ry="2.8" fill="#0b1f3a" fill-opacity=".30" stroke="none" filter="url(#soft)"/><g stroke-linejoin="round" stroke-linecap="round"><path d="M12 12H52V40H12Z" fill="url(#gl64)" stroke="#26365c" stroke-width="1" stroke-opacity=".85"/><path d="M16 16H48V36H16Z" fill="url(#gl8)" stroke="#2f6295" stroke-width="1" stroke-opacity=".85"/><path d="M16 16H48L16 36Z" fill="url(#gl25)" stroke="none" fill-opacity=".5"/><path d="M5 44H59L55 52H9Z" fill="url(#gl26)" stroke="#727e92" stroke-width="1" stroke-opacity=".85"/><path d="M26 44H38" stroke="#8a9bb0" stroke-width="2.2" fill="none"/><path d="M16 16H34L16 34Z" fill="#fff" fill-opacity="0.28" stroke="none"/></g></symbol>
+<symbol id="ic-phone-cases" viewBox="0 0 64 64"><ellipse cx="32" cy="59.2" rx="13" ry="2.8" fill="#0b1f3a" fill-opacity=".30" stroke="none" filter="url(#soft)"/><g stroke-linejoin="round" stroke-linecap="round"><rect x="16" y="5" width="32" height="54" rx="6" fill="url(#gl59)" stroke="#885d75" stroke-width="1" stroke-opacity=".85"/><rect x="21" y="10" width="14" height="14" rx="4" fill="url(#gl64)" stroke="#26365c" stroke-width="1" stroke-opacity=".85"/><circle cx="28" cy="17" r="4" fill="url(#gr68)" stroke="#2f6295" stroke-width="1" stroke-opacity=".85"/><circle cx="28" cy="17" r="1.5" fill="url(#gr69)" stroke="none"/><circle cx="40" cy="13" r="2" fill="url(#gr48)" stroke-width="1" stroke="#887b48" stroke-opacity=".85"/><path d="M24 50H40" stroke="#fff" stroke-width="2.5" stroke-opacity=".8" fill="none"/><rect x="18.5" y="14" width="2.6" height="38" rx="1.3" fill="#fff" fill-opacity="0.4" stroke="none"/></g></symbol>
+<symbol id="ic-earphones" viewBox="0 0 64 64"><ellipse cx="32" cy="59.2" rx="20" ry="2.8" fill="#0b1f3a" fill-opacity=".30" stroke="none" filter="url(#soft)"/><g stroke-linejoin="round" stroke-linecap="round"><path d="M12 38V30Q12 8 32 8Q52 8 52 30V38" stroke="#30689c" stroke-width="7" fill="none"/><path d="M12 38V30Q12 8 32 8Q52 8 52 30V38" stroke="#3b9bea" stroke-width="3.5" fill="none"/><rect x="6" y="33" width="14" height="22" rx="6" fill="url(#gl18)" stroke="#846946" stroke-width="1" stroke-opacity=".85"/><rect x="44" y="33" width="14" height="22" rx="6" fill="url(#gl18)" stroke="#846946" stroke-width="1" stroke-opacity=".85"/><path d="M13 40V48M51 40V48" stroke="#ffd27a" stroke-width="2.5" fill="none"/><ellipse cx="12" cy="41" rx="1.8" ry="6" transform="rotate(0 12 41)" fill="url(#hl)" fill-opacity="0.6" stroke="none"/><ellipse cx="50" cy="41" rx="1.8" ry="6" transform="rotate(0 50 41)" fill="url(#hl)" fill-opacity="0.6" stroke="none"/></g></symbol>
+<symbol id="ic-chargers" viewBox="0 0 64 64"><ellipse cx="32" cy="59.2" rx="12" ry="2.8" fill="#0b1f3a" fill-opacity=".30" stroke="none" filter="url(#soft)"/><g stroke-linejoin="round" stroke-linecap="round"><path d="M26 4V12M38 4V12" stroke-width="2.4" fill="none" stroke="#173957" stroke-opacity=".55"/><path d="M20 12H44V34Q44 38 40 38H24Q20 38 20 34Z" fill="url(#gl16)" stroke="#888f9e" stroke-width="1" stroke-opacity=".85"/><path d="M33 17L27 27H32L30 33L38 23H33Z" fill="url(#gl18)" stroke-width="1" stroke="#846946" stroke-opacity=".85"/><path d="M32 38V46Q32 56 42 56H58" stroke-width="2.4" fill="none" stroke="#173957" stroke-opacity=".55"/><rect x="22" y="14" width="2.4" height="20" rx="1.2" fill="#fff" fill-opacity="0.6" stroke="none"/></g></symbol>
+<symbol id="ic-power-banks" viewBox="0 0 64 64"><ellipse cx="32" cy="59.2" rx="13" ry="2.8" fill="#0b1f3a" fill-opacity=".30" stroke="none" filter="url(#soft)"/><g stroke-linejoin="round" stroke-linecap="round"><rect x="16" y="6" width="32" height="52" rx="6" fill="url(#gl8)" stroke="#2f6295" stroke-width="1" stroke-opacity=".85"/><rect x="21" y="12" width="22" height="9" rx="2" fill="url(#gl64)" stroke="#26365c" stroke-width="1" stroke-opacity=".85"/><circle cx="26" cy="16.5" r="1.8" fill="url(#gr49)" stroke="none"/><circle cx="32" cy="16.5" r="1.8" fill="url(#gr49)" stroke="none"/><circle cx="38" cy="16.5" r="1.8" fill="url(#gr40)" stroke="none"/><path d="M33 28L26 40H32L30 50L39 37H33Z" fill="url(#gl17)" stroke-width="1" stroke="#887b48" stroke-opacity=".85"/><rect x="18.5" y="28" width="2.6" height="24" rx="1.3" fill="#fff" fill-opacity="0.5" stroke="none"/></g></symbol>
+<symbol id="ic-all" viewBox="0 0 64 64"><g stroke-linejoin="round" stroke-linecap="round"><rect x="8" y="8" width="21" height="21" rx="5" fill="url(#gl8)" stroke="#2f6295" stroke-width="1" stroke-opacity=".85"/><rect x="35" y="8" width="21" height="21" rx="5" fill="url(#gl18)" stroke="#846946" stroke-width="1" stroke-opacity=".85"/><rect x="8" y="35" width="21" height="21" rx="5" fill="url(#gl37)" stroke="#534f97" stroke-width="1" stroke-opacity=".85"/><rect x="35" y="35" width="21" height="21" rx="5" fill="url(#gl66)" stroke="#236f71" stroke-width="1" stroke-opacity=".85"/></g></symbol>
+<symbol id="ic-default" viewBox="0 0 64 64"><ellipse cx="32" cy="59" rx="19" ry="2.8" fill="#0b1f3a" fill-opacity=".30" stroke="none" filter="url(#soft)"/><g stroke-linejoin="round" stroke-linecap="round"><path d="M8 22L32 12L56 22V44L32 54L8 44Z" fill="url(#gl18)" stroke="#846946" stroke-width="1" stroke-opacity=".85"/><path d="M8 22L32 32L56 22M32 32V54" fill="none" stroke="#173957" stroke-opacity=".55" stroke-width="1.6"/><path d="M20 17L44 27" stroke-width="2" stroke="#ffd27a" fill="none"/></g></symbol>
+    </svg>
+
+    <div class="sell-modal listing-modal" id="bazaar-shop-modal" aria-hidden="true">
+      <div class="sell-modal-backdrop" data-close-bazaar-shop></div>
+      <div class="sell-modal-dialog bazaar-shop-dialog" role="dialog" aria-modal="true" aria-labelledby="bazaar-shop-title">
+        <button type="button" class="sell-modal-close" aria-label="Close shop manager" data-close-bazaar-shop>×</button>
+        <h3 id="bazaar-shop-title">Make a Shop</h3>
+        <p>Set up your shop, then add products with photos and details customers can view in Online Bazaar.</p>
+        <div id="bazaar-shop-auth-message" class="listing-message is-error" role="status" hidden>
+          Sign in to create or manage your shop. <a href="account.html">Go to sign in</a>.
+        </div>
+        <form id="bazaar-shop-form" hidden>
+          <section class="bazaar-shop-section" aria-labelledby="bazaar-shop-profile-heading">
+            <h4 id="bazaar-shop-profile-heading">Your shop</h4>
+            <div class="sell-field">
+              <label for="bazaar-shop-name">Shop name</label>
+              <input id="bazaar-shop-name" name="name" autocomplete="organization" maxlength="80" required />
+            </div>
+            <div class="sell-field">
+              <label for="bazaar-shop-area">Shop area in Cainta</label>
+              <select id="bazaar-shop-area" name="area" required>
+                <option value="">Choose an area</option>
+                <option>San Andres</option>
+                <option>San Isidro</option>
+                <option>San Juan</option>
+                <option>San Roque</option>
+                <option>Santa Rosa</option>
+                <option>Santo Domingo</option>
+                <option>Santo Niño</option>
+              </select>
+            </div>
+            <div class="sell-field">
+              <label for="bazaar-shop-description">About your shop</label>
+              <textarea id="bazaar-shop-description" name="description" rows="2" maxlength="500" placeholder="Tell customers what your shop offers." required></textarea>
+            </div>
+            <div class="sell-field">
+              <label for="bazaar-shop-photo">Shop photo (optional)</label>
+              <input id="bazaar-shop-photo" name="photo" type="file" accept="image/jpeg,image/png,image/webp" />
+              <img id="bazaar-shop-photo-preview" class="listing-photo-preview" alt="Shop photo preview" hidden />
+            </div>
+            <p id="bazaar-shop-message" class="listing-message" role="status" aria-live="polite"></p>
+            <button type="submit" class="btn btn-secondary">Save Shop</button>
+          </section>
+        </form>
+        <section id="bazaar-shop-products" class="bazaar-shop-section" aria-labelledby="bazaar-products-heading" hidden>
+          <h4 id="bazaar-products-heading">Add a product</h4>
+          <form id="bazaar-product-form">
+            <div class="sell-field">
+              <label for="listing-name">Product name</label>
+              <input id="listing-name" name="name" maxlength="120" placeholder="e.g. Handmade canvas tote bag" required />
+            </div>
+            <div class="sell-grid">
+              <div class="sell-field">
+                <label for="listing-category">Category</label>
+                <select id="listing-category" name="category" required>
+                  <option value="">Choose a category</option>
+                  <option>Clothing</option>
+                  <option>Shoes</option>
+                  <option>Bags</option>
+                  <option>Accessories</option>
+                  <option>Home</option>
+                  <option>Electronics</option>
+                  <option>Other</option>
+                </select>
+              </div>
+              <div class="sell-field">
+                <label for="listing-price">Price (PHP)</label>
+                <input id="listing-price" name="price" type="number" min="1" max="10000000" step="0.01" placeholder="e.g. 250.00" required />
+              </div>
+            </div>
+            <div class="sell-field">
+              <label for="listing-stock">Available stock</label>
+              <input id="listing-stock" name="stock" type="number" min="1" max="99999" step="1" placeholder="e.g. 10" required />
+            </div>
+            <div class="sell-field">
+              <label for="listing-description">Product description</label>
+              <textarea id="listing-description" name="description" rows="3" maxlength="500" placeholder="Describe the product, size, color, condition, or other details." required></textarea>
+            </div>
+            <div class="sell-field">
+              <label for="listing-photos">Product photos (up to 3)</label>
+              <input id="listing-photos" name="photos" type="file" accept="image/jpeg,image/png,image/webp" multiple />
+              <small>JPEG, PNG, or WebP. Photos are resized before upload.</small>
+              <div id="listing-photo-previews" class="listing-photo-previews"></div>
+            </div>
+            <p id="bazaar-listing-message" class="listing-message" role="status" aria-live="polite"></p>
+            <button type="submit" class="btn btn-primary sell-submit">Publish product</button>
+          </form>
+          <div class="bazaar-shop-items">
+            <h4>Your products</h4>
+            <p id="bazaar-shop-empty">Products you publish will appear here and in the Bazaar.</p>
+            <ul id="bazaar-shop-item-list" aria-label="Products in your shop"></ul>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <div class="sell-modal bazaar-product-details-modal" id="bazaar-product-details-modal" aria-hidden="true">
+      <div class="sell-modal-backdrop" data-close-bazaar-details></div>
+      <div class="sell-modal-dialog bazaar-product-details-dialog" role="dialog" aria-modal="true" aria-labelledby="bazaar-product-details-title">
+        <button type="button" class="sell-modal-close" aria-label="Close product details" data-close-bazaar-details>×</button>
+        <div id="bazaar-product-gallery" class="bazaar-product-gallery"></div>
+        <div class="bazaar-product-details-copy">
+          <span id="bazaar-product-category" class="eyebrow"></span>
+          <h3 id="bazaar-product-details-title"></h3>
+          <p id="bazaar-product-details-price" class="bazaar-product-price"></p>
+          <dl class="bazaar-product-facts">
+            <div><dt>Seller</dt><dd><button type="button" id="bazaar-product-seller" class="bazaar-seller-link"></button></dd></div>
+            <div><dt>Shop area</dt><dd id="bazaar-product-area"></dd></div>
+            <div><dt>Availability</dt><dd id="bazaar-product-stock"></dd></div>
+          </dl>
+          <h4>About this product</h4>
+          <p id="bazaar-product-description"></p>
+          <section class="bazaar-product-shop" aria-labelledby="bazaar-product-shop-heading">
+            <img id="bazaar-product-shop-photo" alt="" hidden />
+            <h4 id="bazaar-product-shop-heading">About the shop</h4>
+            <p id="bazaar-product-shop-description"></p>
+          </section>
+          <button type="button" id="bazaar-product-add" class="btn btn-primary">Add to cart</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="sell-modal bazaar-seller-shop-modal" id="bazaar-seller-shop-modal" aria-hidden="true">
+      <div class="sell-modal-backdrop" data-close-bazaar-seller-shop></div>
+      <div class="sell-modal-dialog bazaar-seller-shop-dialog" role="dialog" aria-modal="true" aria-labelledby="bazaar-seller-shop-title">
+        <button type="button" class="sell-modal-close" aria-label="Close seller shop" data-close-bazaar-seller-shop>×</button>
+        <header class="bazaar-seller-shop-header">
+          <img id="bazaar-seller-shop-photo" alt="" hidden />
+          <div>
+            <span class="eyebrow">Online Bazaar shop</span>
+            <h3 id="bazaar-seller-shop-title"></h3>
+            <p id="bazaar-seller-shop-area"></p>
+            <p id="bazaar-seller-shop-description"></p>
+          </div>
+        </header>
+        <h4 class="bazaar-seller-shop-products-heading">Products from this shop</h4>
+        <p id="bazaar-seller-shop-empty" class="bazaar-seller-shop-empty" hidden>This shop has no other active products right now.</p>
+        <div id="bazaar-seller-shop-products" class="bazaar-seller-shop-products"></div>
+      </div>
+    </div>
+
+    <!-- Order form for Food Express and Online Bazaar -->
+    <div class="sell-modal" id="sell-modal" aria-hidden="true">
+      <div class="sell-modal-backdrop" data-close-modal></div>
+      <div class="sell-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="sell-modal-title">
+        <button type="button" class="sell-modal-close" aria-label="Close popup" data-close-modal>×</button>
+        <h3 id="sell-modal-title">Choose a restaurant</h3>
+        <p id="sell-modal-subtitle">Choose a Cainta restaurant, browse its menu, and view delivery progress after confirming your order.</p>
+
+        <form id="sell-form">
+          <input type="hidden" id="sell-service" name="service" value="Food Express" />
+          <input type="hidden" id="item-restaurant" name="restaurant" value="" />
+
+          <div id="bazaar-flow-steps" class="bazaar-flow-steps" aria-label="Online Bazaar order steps" hidden>
+            <span data-bazaar-step="browse">1. Find items</span>
+            <span data-bazaar-step="cart">2. Your cart</span>
+            <span data-bazaar-step="checkout">3. Delivery checkout</span>
+          </div>
+
+          <section id="food-restaurant-picker" class="food-restaurant-picker" aria-label="Choose a Cainta restaurant" hidden>
+            <div class="food-picker-heading">
+              <h4>Restaurants in Cainta</h4>
+              <p>Choose a restaurant to see its menu. Mapped branch pickup locations are used where available; remaining branches use approximate Cainta area points.</p>
+            </div>
+            <div id="food-restaurant-list" class="food-restaurant-list"></div>
+          </section>
+          <div id="food-selected-restaurant" class="food-selected-restaurant" hidden>
+            <span id="food-selected-name"></span>
+            <span id="food-selected-location"></span>
+            <button type="button" id="food-change-restaurant">Change restaurant</button>
+          </div>
+
+          <div class="sell-field item-finder">
+            <label for="item-search">Search menu</label>
+            <input id="item-search" name="itemSearch" type="search" placeholder="Choose a restaurant first" autocomplete="off" autocapitalize="off" spellcheck="false" />
+
+            <!-- Categories: sit under the search box and above the suggestions -->
+            <div class="item-categories" id="item-categories" role="group" aria-label="Filter suggestions by category"></div>
+
+            <!-- Suggestions that update as you type -->
+            <div class="item-suggestions" id="item-suggestions" hidden>
+              <span class="item-suggestions-label" id="item-suggestions-label"></span>
+              <ul class="item-suggestion-list" id="item-suggestion-list"></ul>
+            </div>
+            <span class="sr-only" id="item-search-status" role="status" aria-live="polite"></span>
+            <button type="button" id="bazaar-view-cart-button" class="bazaar-checkout-button" hidden>View cart</button>
+          </div>
+
+          <section id="food-cart" class="food-cart" aria-labelledby="food-cart-title" hidden>
+            <div class="food-cart-heading">
+              <h4 id="food-cart-title">Your cart</h4>
+              <span id="food-cart-count">0 items</span>
+            </div>
+            <button type="button" id="bazaar-back-to-browse" class="bazaar-back-button">← Back to products</button>
+            <p id="food-cart-empty" class="food-cart-empty">Add dishes from the menu to start your order.</p>
+            <ul id="food-cart-items" class="food-cart-items" aria-label="Items in your cart"></ul>
+            <div class="food-cart-total">
+              <span>Subtotal</span>
+              <strong id="food-cart-total">PHP 0.00</strong>
+            </div>
+            <button type="button" id="bazaar-checkout-button" class="bazaar-checkout-button" hidden>Continue to delivery checkout</button>
+          </section>
+
+          <div id="food-checkout-fields" class="food-checkout-fields">
+          <div id="bazaar-item-fields">
+          <div class="sell-field">
+            <label for="item-name">Menu item</label>
+            <input id="item-name" name="itemName" type="text" placeholder="Choose an item from the menu" readonly />
+            <small id="bazaar-selected-seller" class="bazaar-selected-seller" hidden></small>
+          </div>
+
+          <div class="sell-grid">
+            <div class="sell-field">
+              <label for="item-category">Category</label>
+              <select id="item-category" name="category">
+                <option>Food</option>
+                <option>Fashion</option>
+                <option>Home</option>
+                <option>Other</option>
+              </select>
+            </div>
+
+            <div class="sell-field">
+              <label for="item-price">Fixed price each (PHP)</label>
+              <input id="item-price" name="price" type="number" min="1" placeholder="Enter an estimated budget" readonly />
+            </div>
+          </div>
+          </div>
+
+          <div id="bazaar-checkout-fields" class="bazaar-checkout-fields" hidden>
+          <div class="bazaar-checkout-heading">
+            <button type="button" id="bazaar-back-to-cart" class="bazaar-back-button">← Back to products and cart</button>
+            <h4>Delivery details</h4>
+            <p>Choose your Cainta address to preview the delivery route.</p>
+          </div>
+
+          <div class="sell-field">
+            <label for="item-details">Order details</label>
+            <textarea id="item-details" name="details" rows="3" placeholder="Optional: add meal size, sides, or special requests."></textarea>
+          </div>
+
+          <div class="sell-field">
+            <label for="delivery-address">Delivery address</label>
+            <textarea id="delivery-address" name="deliveryAddress" class="delivery-address-input" rows="2" placeholder="House number, street, barangay (e.g. 12 Ortigas Ave Ext, San Andres, Cainta)" autocomplete="street-address" required></textarea>
+            <div id="delivery-address-suggestions" class="delivery-address-suggestions" role="group" aria-label="Address suggestions" hidden></div>
+            <div class="delivery-location-actions">
+              <button type="button" class="account-secondary" id="use-gps-btn">Use my location</button>
+              <button type="button" class="account-secondary" id="pin-map-btn" aria-expanded="false" aria-controls="map-pin-container">Pin on map</button>
+            </div>
+            <div id="map-pin-container" class="delivery-pin-map" role="region" aria-label="Choose a delivery location on the map" hidden></div>
+            <div class="sell-field delivery-barangay-field" id="delivery-barangay-field" hidden>
+              <label for="delivery-barangay">Barangay</label>
+              <select id="delivery-barangay" name="deliveryBarangay">
+                <option value="">Choose your barangay</option>
+                <option>San Andres</option>
+                <option>San Isidro</option>
+                <option>San Juan</option>
+                <option>San Roque</option>
+                <option>Santa Rosa</option>
+                <option>Santo Domingo</option>
+                <option>Santo Niño</option>
+              </select>
+              <small>We couldn’t identify the barangay automatically. Choose it to finish your address.</small>
+            </div>
+            <small class="delivery-address-note">Enter your full Cainta address, use GPS on HTTPS or localhost, or pin a spot on the map. GPS accuracy can vary, so adjust the pin if needed.</small>
+            <p id="delivery-address-preview" class="delivery-address-feedback" data-state="info" role="status" aria-live="polite">Enter your address to preview the estimated travel time.</p>
+          </div>
+
+          <div class="sell-field">
+            <label for="seller-contact">Buyer contact</label>
+            <input id="seller-contact" name="contact" type="text" placeholder="Your phone or email" required />
+          </div>
+
+          <p id="payment-demo-note" class="payment-demo-note" hidden>Cash on delivery is selected. Payment is not processed online, and no card details are collected.</p>
+          <button id="sell-submit" type="submit" class="btn btn-primary sell-submit">Confirm order (no payment)</button>
+          </div>
+          </div>
+        </form>
+
+        <section class="order-auth-prompt" id="order-auth-prompt" aria-labelledby="order-auth-title" hidden>
+          <div class="order-auth-card">
+            <h3 id="order-auth-title">Sign in to place your order</h3>
+            <p>Please sign in or create an account before completing checkout.</p>
+            <div class="order-auth-actions">
+              <a class="btn btn-primary" href="account.html?mode=signin" target="_blank" rel="noopener">Sign In</a>
+              <a class="btn btn-secondary" href="account.html?mode=create" target="_blank" rel="noopener">Create Account</a>
+            </div>
+            <p class="order-auth-help">Your account opens in a new tab. Return here after signing in to continue your order.</p>
+            <button type="button" class="btn btn-primary order-auth-continue" id="order-auth-continue">I've signed in - continue</button>
+            <button type="button" class="order-auth-back" id="order-auth-back">Back to order</button>
+            <p class="order-auth-message" id="order-auth-message" role="status" aria-live="polite"></p>
+          </div>
+        </section>
+
+        <p id="sell-success" class="sell-success" hidden>Order confirmed. No payment was collected.</p>
+        <section class="delivery-estimate" id="delivery-estimate" aria-labelledby="delivery-estimate-title" hidden>
+          <h4 id="delivery-estimate-title">Your delivery is on the way</h4>
+          <p id="delivery-estimate-summary" class="delivery-estimate-summary"></p>
+          <p id="delivery-estimate-status" class="delivery-estimate-status" role="status" aria-live="polite"></p>
+          <ol id="delivery-milestones" class="delivery-milestones" aria-label="Estimated Food Express milestones"></ol>
+          <div class="delivery-progress" role="group" aria-label="Delivery progress stages">
+            <div class="delivery-progress-content">
+              <div
+                id="delivery-progress-bar"
+                class="delivery-progress-bar"
+                role="progressbar"
+                aria-label="Delivery progress"
+                aria-valuemin="0"
+                aria-valuemax="100"
+                aria-valuenow="0"
+                aria-valuetext="Order confirmed"
+              >
+                <span class="delivery-progress-bar-fill"></span>
+              </div>
+              <ol id="delivery-progress" class="delivery-progress-steps"></ol>
+            </div>
+          </div>
+          <div id="delivery-map" class="delivery-map" role="region" aria-label="Estimated delivery route map"></div>
+          <a id="delivery-map-link" class="delivery-map-link" target="_blank" rel="noopener noreferrer" hidden>Open route in OpenStreetMap</a>
+          <small class="delivery-estimate-note">Food preparation, rider arrival, pickup, and delivery times are estimates from a shared 15-rider simulated fleet. Busy riders may create a queue. The map position is simulated and is not live GPS; travel estimates do not account for live traffic.</small>
+        </section>
+      </div>
+    </div>
+
+    <section class="assistant-chat" aria-label="Delivery and deals assistant">
+      <div class="delivery-arrival-popout" id="delivery-arrival-popout" role="status" aria-live="polite" aria-atomic="true" hidden>
+        <img src="rotom.png" width="72" height="72" alt="Rotom Dex" />
+        <div class="delivery-arrival-copy">
+          <strong>Rotom Dex</strong>
+          <p id="delivery-arrival-message"></p>
+        </div>
+        <button type="button" id="delivery-arrival-close" aria-label="Dismiss delivery update">×</button>
+      </div>
+      <div class="assistant-chat-panel" id="assistant-chat-panel" hidden>
+        <header class="assistant-chat-header">
+          <div class="assistant-chat-header-main">
+            <span class="assistant-chat-avatar" aria-hidden="true">
+              <img src="rotom.png" width="42" height="42" alt="" style="border-radius: 50%;" />
+            </span>
+            <div>
+              <h2 id="assistant-chat-title">Rotom Dex</h2>
+              <p>Delivery &amp; deals assistant · Bzzt!</p>
+            </div>
+          </div>
+          <button type="button" class="assistant-chat-close" id="assistant-chat-close" aria-label="Close chat">×</button>
+        </header>
+        <div class="assistant-chat-messages" id="assistant-chat-messages" role="log" aria-live="polite" aria-labelledby="assistant-chat-title"></div>
+        <div class="assistant-chat-tools">
+          <button type="button" class="assistant-chat-notifications" id="assistant-chat-notifications">Turn on arrival notifications</button>
+        </div>
+        <form class="assistant-chat-form" id="assistant-chat-form">
+          <label class="sr-only" for="assistant-chat-input">Ask about delivery or deals</label>
+          <input id="assistant-chat-input" name="message" type="text" maxlength="240" placeholder="Ask about delivery or deals..." autocomplete="off" required />
+          <button type="submit" class="btn btn-primary">Send</button>
+        </form>
+      </div>
+      <button type="button" class="assistant-chat-toggle" id="assistant-chat-toggle" aria-expanded="false" aria-controls="assistant-chat-panel">
+        <span aria-hidden="true">⚡</span> Ask Rotom Dex
+        <span class="assistant-chat-unread" id="assistant-chat-unread" aria-label="New update" hidden></span>
+      </button>
+    </section>
+  <script>
+    (async function () {
+      const API_BASE = window.CAINTA_API_BASE;
+      const session = JSON.parse(localStorage.getItem("coe-demo-session-v1") || "null");
+      if (!session?.token) return;
+      try {
+        const res = await fetch(`${API_BASE}/api/auth/me`, {
+          headers: { Authorization: `Bearer ${session.token}` }
+        });
+        if (!res.ok) return;
+        const me = await res.json();
+        if (me.roles?.some(r => ['admin', 'staff'].includes(r))) {
+          document.getElementById('nav-admin').hidden = false;
+        }
+      } catch (e) { /* silent */ }
+    })();
+  </script> 
+  </body>
+</html>
