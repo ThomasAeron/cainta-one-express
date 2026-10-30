@@ -1,30 +1,20 @@
 import { Router } from 'express';
 import { randomInt } from 'node:crypto';
 import { z } from 'zod';
-import nodemailer from 'nodemailer';
 import { query } from '../db.js';
 
 export const otpRouter = Router();
-
-let transporter;
-
-const getTransporter = () => {
-  if (!transporter) {
-    transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: process.env.GMAIL_USER,
-        pass: process.env.GMAIL_APP_PASSWORD,
-      },
-    });
-  }
-  return transporter;
-};
 
 otpRouter.post('/send', async (req, res, next) => {
   try {
     const { email } = z.object({ email: z.string().email() }).parse(req.body);
     const lowerEmail = email.toLowerCase();
+    const resendApiKey = process.env.RESEND_API_KEY;
+    const from = process.env.RESEND_FROM_EMAIL;
+
+    if (!resendApiKey || !from) {
+      throw new Error('Resend email configuration is missing.');
+    }
 
     const existing = await query('select id from users where email = $1', [lowerEmail]);
     if (existing.rowCount > 0) {
@@ -40,13 +30,26 @@ otpRouter.post('/send', async (req, res, next) => {
       [`OTP for ${lowerEmail}: ${code}`, `Expires at ${expiresAt}`]
     );
 
-    await getTransporter().sendMail({
-      from: `"Cainta One Express" <${process.env.GMAIL_USER}>`,
-      to: lowerEmail,
-      subject: 'Your Cainta One Express verification code',
-      text: `Your verification code is: ${code}\n\nThis code expires in 10 minutes. If you didn't request this, ignore this email.`,
-      html: `<p>Your verification code is:</p><h2>${code}</h2><p>This code expires in 10 minutes.</p>`,
+    const resendResponse = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${resendApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from,
+        to: lowerEmail,
+        subject: 'Your Cainta One Express verification code',
+        text: `Your verification code is: ${code}\n\nThis code expires in 10 minutes. If you didn't request this, ignore this email.`,
+        html: `<p>Your verification code is:</p><h2>${code}</h2><p>This code expires in 10 minutes.</p>`,
+      }),
     });
+
+    if (!resendResponse.ok) {
+      const errorBody = await resendResponse.text();
+      console.error('Resend API Error:', errorBody);
+      throw new Error('Failed to send verification email. Please try again later.');
+    }
 
     console.log(`OTP sent to ${lowerEmail}`);
     res.json({ message: 'Verification code sent to email.' });
