@@ -11,7 +11,6 @@
     <link rel="icon" type="image/svg+xml" href="favicon.svg" />
     <link rel="stylesheet" href="style.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="api-config.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
     <script src="Backend/app-data.js" defer></script>
     <script src="script.js" defer></script>
@@ -957,7 +956,7 @@
     </section>
   <script>
     (async function () {
-      const API_BASE = window.CAINTA_API_BASE;
+      const API_BASE = window.CAINTA_API_BASE || window.location.origin;
       const session = JSON.parse(localStorage.getItem("coe-demo-session-v1") || "null");
       if (!session?.token) return;
       try {

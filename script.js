@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', async () => {
   const companyDetails = window.CaintaOneData.company;
-  const API_BASE = window.CAINTA_API_BASE;
+  const API_BASE = window.CAINTA_API_BASE || window.location.origin;
 
   const formatApiError = (value) => {
     if (typeof value === 'string') return value;

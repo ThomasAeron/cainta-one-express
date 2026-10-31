@@ -6,7 +6,6 @@
 <title>Admin · Cainta One Express</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<script src="api-config.js"></script>
 <script src="Backend/app-data.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
@@ -261,7 +260,7 @@ const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&':'&amp;','<'
 const peso = (n) => n == null ? '–' : 'PHP ' + Number(n).toLocaleString('en-PH', { minimumFractionDigits: 2 });
 
 async function api(path, options = {}) {
-  const res = await fetch(`${window.CAINTA_API_BASE}${path}`, { ...options, headers: { 'Content-Type': 'application/json', ...(session?.token ? { Authorization: `Bearer ${session.token}` } : {}), ...(options.headers || {}) } });
+  const res = await fetch(`${window.CAINTA_API_BASE || window.location.origin}${path}`, { ...options, headers: { 'Content-Type': 'application/json', ...(session?.token ? { Authorization: `Bearer ${session.token}` } : {}), ...(options.headers || {}) } });
   if (!res.ok) {
     let message = `HTTP ${res.status}`;
     try { const j = await res.json(); message = j.error || j.message || j.detail || message; } catch {}
