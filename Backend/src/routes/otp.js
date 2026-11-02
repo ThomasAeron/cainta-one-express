@@ -27,29 +27,29 @@ otpRouter.post('/send', async (req, res, next) => {
       [`OTP for ${lowerEmail}: ${code}`, `Expires at ${expiresAt}`]
     );
 
-    // 4. Send email via Brevo
-    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+    // 4. Send email via Google Apps Script
+    const scriptUrl = 'https://script.google.com/macros/s/AKfycbyEyoXYUd9BkEVpcTBqyt2gNtpI1oOMMrSp5EICly5Ez8Vu_4kbmDe7bde0ANEli-6E/exec';
+    
+    const response = await fetch(scriptUrl, {
       method: 'POST',
       headers: {
-        'api-key': process.env.BREVO_API_KEY,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        // IMPORTANT: Change this to the Gmail you verified in Brevo!
-        sender: { name: 'Cainta One Express', email: 'your-verified-gmail@gmail.com' }, 
-        to: [{ email: lowerEmail }],
+        token: process.env.GMAIL_SCRIPT_TOKEN, // The secret token from Render
+        to: lowerEmail,
         subject: 'Your Cainta One Express verification code',
-        textContent: `Your verification code is: ${code}\n\nThis code expires in 10 minutes. If you didn't request this, ignore this email.`
+        body: `Your verification code is: ${code}\n\nThis code expires in 10 minutes. If you didn't request this, ignore this email.`
       })
     });
 
     if (!response.ok) {
       const errorBody = await response.text();
-      console.error('Brevo API Error:', errorBody);
+      console.error('Google Script Error:', errorBody);
       throw new Error('Failed to send verification email.');
     }
 
-    console.log(`OTP sent to ${lowerEmail} via Brevo`);
+    console.log(`OTP sent to ${lowerEmail} via Google Apps Script`);
     res.json({ message: 'Verification code sent to email.' });
   } catch (err) {
     next(err);
