@@ -58,7 +58,7 @@ export async function requireAuth(req, res, next) {
       id: rows[0].id,
       email: rows[0].email,
       full_name: rows[0].full_name,
-      roles: rows[0].role_name ? [rows[0].role_name] : [],
+      roles: rows[0].role_name ? [rows[0].role_name.toLowerCase()] : [],
     };
     return next();
   } catch (error) {
