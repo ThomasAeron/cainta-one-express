@@ -15,6 +15,7 @@ import { chatRouter } from './routes/chat-route.js';
 import { locationRouter } from './routes/location.js';
 import { addressesRouter } from './routes/addresses.js';
 import { otpRouter } from './routes/otp.js';
+import { paymentsRouter } from './routes/payments.js';
 import {
   advanceSimulatedDeliveries,
   recalculateActiveSimulatedDeliveries
@@ -69,6 +70,7 @@ app.use('/api/chat', chatRouter);
 app.use('/api/location', locationRouter);
 app.use('/api/addresses', addressesRouter);
 app.use('/api/otp', otpRouter);
+app.use('/api/payments', paymentsRouter);
 
 app.use('/api', (req, res) => {
   res.status(404).json({ error: 'Endpoint not found' });

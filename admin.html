@@ -828,9 +828,12 @@ function render() {
     const destination = [s.destination_line, s.destination_area].filter(Boolean).join(', ')
       || s.destination || s.destination_addr || '–';
     const paymentText = s.payment_method
-      ? `${s.payment_method.toUpperCase()} · PHP ${Number(s.amount_paid || 0).toFixed(2)} paid`
+      ? `${s.payment_method.toUpperCase()} · ${String(s.payment_status || 'unpaid').toUpperCase()} · PHP ${Number(s.amount_paid || 0).toFixed(2)} paid`
       : '—';
-    return `<tr><td><b>${esc(s.tracking_number || s.id)}</b></td><td>${esc(destination)}</td><td><span class="pill ${statusClass(key)}">${esc(key.replace('_', ' '))}</span></td><td>${esc(String(s.created_at || '').slice(0, 10))}</td><td>${paymentText}</td><td>${next ? `<button class="btn sm" data-id="${esc(s.id)}" data-next="${next}">Mark ${next.replace('_', ' ')}</button>` : '–'}</td></tr>`;
+    const paymentButton = s.payment_method && Number(s.amount_paid || 0) === 0
+      ? `<button class="btn sm" data-payment-id="${esc(s.id)}">Mark paid</button>`
+      : '';
+    return `<tr><td><b>${esc(s.tracking_number || s.id)}</b></td><td>${esc(destination)}</td><td><span class="pill ${statusClass(key)}">${esc(key.replace('_', ' '))}</span></td><td>${esc(String(s.created_at || '').slice(0, 10))}</td><td>${paymentText}</td><td>${paymentButton} ${next ? `<button class="btn sm" data-id="${esc(s.id)}" data-next="${next}">Mark ${next.replace('_', ' ')}</button>` : '–'}</td></tr>`;
   }).join('') || '<tr><td colspan="6">No shipments yet. Orders placed on the website appear here.</td></tr>';
   $('cat').innerHTML = items.slice(0, 25).map((i) => `<tr><td>${esc(i.name)}</td><td>${esc(i.category)}</td><td>${esc(i.merchant || '–')}</td><td>${peso(i.price)}</td></tr>`).join('');
 
@@ -861,6 +864,17 @@ async function load() {
 }
 
 $('ship').addEventListener('click', async (e) => {
+  const paymentBtn = e.target.closest('button[data-payment-id]');
+  if (paymentBtn) {
+    const amount = Number(window.prompt('Enter the amount confirmed as paid in PHP:'));
+    if (!Number.isFinite(amount) || amount <= 0) return;
+    paymentBtn.disabled = true;
+    try {
+      await api(`/api/shipments/${encodeURIComponent(paymentBtn.dataset.paymentId)}/payment-confirmation`, { method: 'POST', body: JSON.stringify({ amount }) });
+      await load();
+    } catch (err) { alert('Could not confirm payment: ' + err.message); paymentBtn.disabled = false; }
+    return;
+  }
   const btn = e.target.closest('button[data-id]'); if (!btn) return;
   if (btn.dataset.id.startsWith('demo-')) { const s = shipments.find((x) => x.id === btn.dataset.id); s.status = btn.dataset.next; render(); return; }
   btn.disabled = true;

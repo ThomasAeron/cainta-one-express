@@ -1580,7 +1580,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             deliveryEstimateSummary.textContent = `To ${preview.destination.label}, Cainta · ${preview.summary}`;
           }
           if (deliveryEstimateStatus) {
-            deliveryEstimateStatus.textContent = 'Review the map and address, then place your COD order to confirm delivery.';
+            deliveryEstimateStatus.textContent = 'Review the map and address, then continue to secure payment.';
           }
           drawDeliveryMap(preview.destination, preview.pickup, preview.route?.geometry);
         }
@@ -1652,6 +1652,9 @@ document.addEventListener('DOMContentLoaded', async () => {
           quantity: line.quantity
         }))
       : [{ product_id: 'dddd0001-0000-0000-0000-000000000001', quantity: 1 }];
+    const orderTotal = foodCartContents.length
+      ? foodCartContents.reduce((amount, line) => amount + line.entry.price * line.quantity, 0)
+      : Number(itemPrice?.value || 0);
     const created = await api('/api/shipments', {
       method: 'POST',
       body: JSON.stringify({
@@ -1659,7 +1662,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         destination_addr: address.id,
         vehicle_type: 'motorcycle',
         vehicle_plate: 'DEMO-001',
-        payment_method: 'cod',
+        payment_method: 'xendit',
         amount_paid: 0,
         delivery_kind: sellIsFoodOrder ? 'food' : 'bazaar',
         ...(sellIsFoodOrder ? {
@@ -1702,9 +1705,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       assumedAverageSpeedKmh: deliverySettings.assumedAverageSpeedKmh
     };
     
-    const foodOrderSummary = foodCartContents
-      .map((line) => `${line.quantity} × ${line.entry.name}`)
-      .join(', ');
     const foodOrderTotal = foodCartContents.reduce((amount, line) => amount + line.entry.price * line.quantity, 0);
     deliveryEstimateSummary.textContent = sellIsFoodOrder
       ? `${foodOrderSummary} from ${selectedRestaurant.name} · PHP ${foodOrderTotal.toFixed(2)} · ${addressText} · Rider ${deliveryPlan.driverName} · ${deliveryPlan.estimatedDeliveryMinutes} min estimated`
@@ -1728,6 +1728,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     } else if (!window.L && deliveryEstimateStatus) {
       deliveryEstimateStatus.textContent = 'The map library is unavailable; the delivery timeline will still run.';
     }
+    const payment = await api('/api/payments/create-invoice', {
+      method: 'POST',
+      body: JSON.stringify({
+        shipmentId: created.id,
+        amount: orderTotal,
+        description: `${sellIsFoodOrder ? 'Food Express' : 'Cainta One Express'} order ${created.tracking_number}`
+      })
+    });
+    if (!payment.checkout_url) {
+      throw new Error('Xendit did not return a secure checkout link. Your order was created, but payment was not started.');
+    }
+    if (sellSuccess) {
+      sellSuccess.textContent = `Order ${created.tracking_number} is ready for secure payment. Redirecting to Xendit...`;
+      sellSuccess.hidden = false;
+    }
+    window.location.assign(payment.checkout_url);
   };
 
   deliveryAddress?.addEventListener('input', () => {
@@ -2302,11 +2318,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
     if (sellSubmit && sellIsFoodOrder) {
       sellSubmit.textContent = itemCount
-        ? `Confirm order · PHP ${subtotal.toFixed(2)} (no payment)`
+        ? `Continue to payment · PHP ${subtotal.toFixed(2)}`
         : 'Add items to your cart';
       sellSubmit.disabled = itemCount === 0;
     } else if (sellSubmit && isBazaarOrder) {
-      sellSubmit.textContent = `Place order · PHP ${subtotal.toFixed(2)} (COD)`;
+      sellSubmit.textContent = `Continue to payment · PHP ${subtotal.toFixed(2)}`;
       sellSubmit.disabled = itemCount === 0;
     }
   };
@@ -2867,7 +2883,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     sellSuccess.hidden = true;
     if (orderAuthPrompt) orderAuthPrompt.hidden = true;
     if (orderAuthMessage) orderAuthMessage.textContent = '';
-    if (sellSuccess) sellSuccess.textContent = 'Order confirmed. No payment was collected.';
+    if (sellSuccess) sellSuccess.textContent = 'Order created. Continue to Xendit to complete payment.';
     if (deliveryEstimate) deliveryEstimate.hidden = true;
     if (deliveryEstimateTitle) deliveryEstimateTitle.textContent = 'Your delivery route';
     deliveryEstimateSummary && (deliveryEstimateSummary.textContent = '');
@@ -2893,7 +2909,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (bazaarCheckoutFields) bazaarCheckoutFields.hidden = isBazaarOrder;
     if (bazaarItemFields) bazaarItemFields.hidden = true;
     if (foodCart) foodCart.hidden = true;
-    if (paymentDemoNote) paymentDemoNote.hidden = !sellIsFoodOrder;
+    if (paymentDemoNote) paymentDemoNote.hidden = false;
     if (itemSearch) itemSearch.placeholder = sellIsFoodOrder ? 'Choose a restaurant first' : 'Search products, e.g. T-shirt or sneakers';
     const itemSearchLabel = document.querySelector('label[for="item-search"]');
     if (itemSearchLabel) itemSearchLabel.textContent = sellIsFoodOrder ? 'Search menu' : 'Search products';
@@ -2908,7 +2924,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (itemPriceLabel) itemPriceLabel.textContent = sellIsFoodOrder ? 'Fixed price each (PHP)' : 'Your budget (PHP)';
     if (sellSubmit) {
       sellSubmit.disabled = false;
-      sellSubmit.textContent = sellIsFoodOrder ? 'Confirm order (no payment)' : 'Place order (COD)';
+      sellSubmit.textContent = 'Continue to secure payment';
     }
     if (isBazaarOrder) setBazaarFlowStep('browse');
     if (foodCartEmpty) foodCartEmpty.textContent = sellIsFoodOrder
@@ -3400,7 +3416,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (sellSuccess) {
         const total = foodCartContents.reduce((amount, line) => amount + line.entry.price * line.quantity, 0);
         const orderSummary = foodCartContents.map((line) => `${line.quantity} × ${line.entry.name}`).join(', ');
-        sellSuccess.textContent = `${isBazaarOrder ? 'Bazaar order' : 'Order'} confirmed${orderSummary ? `: ${orderSummary} · PHP ${total.toFixed(2)}` : ''}. Cash on delivery; no payment was collected. Delivery to: ${deliveryAddress.value.trim()}.`;
+        sellSuccess.textContent = `${isBazaarOrder ? 'Bazaar order' : 'Order'} created${orderSummary ? `: ${orderSummary} · PHP ${total.toFixed(2)}` : ''}. Redirecting to secure Xendit payment...`;
         sellSuccess.hidden = false;
         sellForm.hidden = true;
       }
@@ -3420,7 +3436,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         sellSubmit.disabled = false;
         sellSubmit.textContent = (sellIsFoodOrder || isBazaarOrder) && sellSuccess && !sellSuccess.hidden
           ? 'Order confirmed'
-          : sellIsFoodOrder ? 'Confirm order (no payment)' : isBazaarOrder ? 'Place order (COD)' : 'Send Order Request';
+          : 'Continue to secure payment';
       }
     }
   });

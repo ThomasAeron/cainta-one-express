@@ -331,7 +331,9 @@ export async function advanceSimulatedDeliveries(pool) {
   const duePlans = await pool.query(
     `select p.shipment_id
      from public.simulated_delivery_plans p
-    where (p.status in ('queued', 'assigned') and p.pickup_eta <= now())
+     join public.shipments s on s.id = p.shipment_id
+    where s.payment_status = 'paid'
+      and (p.status in ('queued', 'assigned') and p.pickup_eta <= now())
        or (p.status = 'picked_up' and p.delivery_eta <= now())
      order by p.delivery_eta
      limit 100`

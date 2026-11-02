@@ -28,6 +28,7 @@ shipmentsRouter.get(
            s.delivered_at,
            s.created_at,
            s.payment_method,
+           s.payment_status,
            s.amount_paid,
            a.line1 as destination_line,
            a.area  as destination_area,
@@ -48,7 +49,7 @@ shipmentsRouter.get(
 // POST /api/shipments  — create a shipment via the stored procedure
 // ------------------------------------------------------------------
 const createSchema = z.object({
-  payment_method: z.enum(['cod', 'gcash', 'card']).optional().default('cod'),
+  payment_method: z.enum(['cod', 'gcash', 'card', 'xendit']).optional().default('cod'),
   amount_paid: z.number().min(0).optional().default(0),
   origin_warehouse: z.string().uuid(),
   destination_addr: z.string().uuid(),
@@ -129,7 +130,10 @@ shipmentsRouter.post('/', requireAuth, async (req, res, next) => {
     // (The stored procedure doesn't know about these columns yet.)
     await client.query(
       `update public.shipments
-       set payment_method = $1, amount_paid = $2
+       set payment_method = $1,
+           amount_paid = $2,
+           payment_status = case when $1 = 'xendit' then 'unpaid' else payment_status end,
+           status = case when $1 = 'xendit' then 'pending_payment' else status end
        where id = $3`,
       [b.payment_method, b.amount_paid, shipmentId]
     );
@@ -182,6 +186,30 @@ shipmentsRouter.post('/', requireAuth, async (req, res, next) => {
     client?.release();
   }
 });
+
+shipmentsRouter.post(
+  '/:id/payment-confirmation',
+  requireAuth,
+  requireRole('admin', 'staff'),
+  async (req, res, next) => {
+    try {
+      const { amount } = z.object({ amount: z.number().positive() }).parse(req.body);
+      const result = await query(
+        `update public.shipments
+         set amount_paid = $1
+         where id = $2
+         returning id, tracking_number, amount_paid`,
+        [amount, req.params.id]
+      );
+      if (result.rowCount === 0) {
+        return res.status(404).json({ error: 'Shipment not found.' });
+      }
+      res.json(result.rows[0]);
+    } catch (err) {
+      next(err);
+    }
+  }
+);
 
 // ------------------------------------------------------------------
 // GET /api/shipments/mine  — shipments created by the current user
