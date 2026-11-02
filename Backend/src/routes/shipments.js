@@ -141,11 +141,12 @@ shipmentsRouter.post('/', requireAuth, async (req, res, next) => {
     let deliveryPlan = null;
     if (b.delivery_kind === 'food') {
       const { rows } = await client.query(
-        `select created_at,
-                (select lat from public.addresses where id = destination_addr) as destination_lat,
-                (select lon from public.addresses where id = destination_addr) as destination_lon
-         from public.shipments
-         where id = $1`,
+        `select s.created_at,
+                a.lat as destination_lat,
+                a.lon as destination_lon
+         from public.shipments s
+         join public.addresses a on a.id = s.destination_addr
+         where s.id = $1::uuid`,
         [shipmentId]
       );
       if (!rows.length || rows[0].destination_lat == null || rows[0].destination_lon == null) {
