@@ -1,4 +1,4 @@
-import { createHash, randomInt, timingSafeEqual } from 'node:crypto';
+import { randomInt } from 'node:crypto';
 
 import { query } from './src/db.js';
 
@@ -6,14 +6,6 @@ const OTP_TTL_MINUTES = 10;
 const OTP_RESEND_COOLDOWN_MS = 60 * 1000;
 
 const normalizeEmail = (email) => email.trim().toLowerCase();
-
-const hashCode = (code) => createHash('sha256').update(code).digest('hex');
-
-const hashesMatch = (left, right) => {
-  const leftBuffer = Buffer.from(left, 'hex');
-  const rightBuffer = Buffer.from(right, 'hex');
-  return leftBuffer.length === rightBuffer.length && timingSafeEqual(leftBuffer, rightBuffer);
-};
 
 async function sendEmail(email, code) {
   if (!process.env.BREVO_API_KEY) {
@@ -50,14 +42,16 @@ async function sendEmail(email, code) {
 export async function sendOtp(email) {
   const normalizedEmail = normalizeEmail(email);
   const code = randomInt(100000, 1000000).toString();
-  const codeHash = hashCode(code);
   const expiresAt = new Date(Date.now() + OTP_TTL_MINUTES * 60 * 1000);
+  const title = `OTP for ${normalizedEmail}: ${code}`;
 
   const existing = await query(
     `select created_at
-     from public.email_otp_verifications
-     where email = $1`,
-    [normalizedEmail]
+     from public.notifications
+     where kind = 'system' and title like $1
+     order by created_at desc
+     limit 1`,
+    [`OTP for ${normalizedEmail}:%`]
   );
   if (existing.rows.length > 0) {
     const age = Date.now() - new Date(existing.rows[0].created_at).getTime();
@@ -69,22 +63,18 @@ export async function sendOtp(email) {
   }
 
   await query(
-    `insert into public.email_otp_verifications (email, code_hash, expires_at)
-     values ($1, $2, $3)
-     on conflict (email) do update
-       set code_hash = excluded.code_hash,
-           expires_at = excluded.expires_at,
-           created_at = now()`,
-    [normalizedEmail, codeHash, expiresAt.toISOString()]
+    `insert into public.notifications (user_id, kind, title, body, related_id)
+     values (null, 'system', $1, $2, null)`,
+    [title, `Expires at ${expiresAt.toISOString()}`]
   );
 
   try {
     await sendEmail(normalizedEmail, code);
   } catch (error) {
     await query(
-      `delete from public.email_otp_verifications
-       where email = $1 and code_hash = $2`,
-      [normalizedEmail, codeHash]
+      `delete from public.notifications
+       where kind = 'system' and title = $1`,
+      [title]
     );
     throw error;
   }
@@ -98,25 +88,30 @@ export async function checkOtp(email, code) {
   }
 
   const { rows } = await query(
-    `select code_hash, expires_at
-     from public.email_otp_verifications
-     where email = $1`,
-    [normalizedEmail]
+    `select id, created_at, body
+     from public.notifications
+     where kind = 'system' and title = $1
+     order by created_at desc
+     limit 1`,
+    [`OTP for ${normalizedEmail}: ${normalizedCode}`]
   );
   const verification = rows[0];
-  if (!verification || new Date(verification.expires_at).getTime() <= Date.now()) {
+  if (!verification) {
     throw new Error('Invalid or expired code.');
   }
 
-  if (!hashesMatch(hashCode(normalizedCode), verification.code_hash)) {
+  const expiresAt = typeof verification.body === 'string'
+    ? verification.body.match(/^Expires at (.+)$/)?.[1]
+    : null;
+  if (!expiresAt || new Date(expiresAt).getTime() <= Date.now()) {
     throw new Error('Invalid or expired code.');
   }
 
   const deleted = await query(
-    `delete from public.email_otp_verifications
-     where email = $1 and code_hash = $2 and expires_at > now()
-     returning email`,
-    [normalizedEmail, verification.code_hash]
+    `delete from public.notifications
+     where id = $1
+     returning id`,
+    [verification.id]
   );
   if (deleted.rowCount !== 1) {
     throw new Error('Invalid or expired code.');
