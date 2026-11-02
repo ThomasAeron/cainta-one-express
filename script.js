@@ -2135,6 +2135,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     chatMessages.scrollTop = chatMessages.scrollHeight;
     chatInput?.focus();
   });
+  document.querySelectorAll('.chat-prompt-btn').forEach((button) => {
+    button.addEventListener('click', () => {
+      if (!chatInput || !chatForm) return;
+      chatInput.value = button.dataset.prompt || '';
+      chatForm.requestSubmit();
+    });
+  });
   chatNotifications?.addEventListener('click', async () => {
     if (!('Notification' in window)) {
       addChatMessage('This browser does not support desktop notifications. I will still show arrival updates here while the page is open.');
