@@ -938,8 +938,15 @@
             <input id="seller-contact" name="contact" type="text" placeholder="Your phone or email" required />
           </div>
 
-          <p id="payment-demo-note" class="payment-demo-note" hidden>After your order is created, you will be redirected to Xendit to pay securely by GCash, Maya, or card.</p>
-          <button id="sell-submit" type="submit" class="btn btn-primary sell-submit">Continue to secure payment</button>
+          <div class="sell-field">
+            <label for="payment-method">Payment method</label>
+            <select id="payment-method" name="paymentMethod">
+              <option value="xendit">Online payment (GCash, Maya, card)</option>
+              <option value="cod">Cash on delivery</option>
+            </select>
+          </div>
+          <p id="payment-demo-note" class="payment-demo-note" hidden>Online orders are redirected to Xendit for secure payment.</p>
+          <button id="sell-submit" type="submit" class="btn btn-primary sell-submit">Continue to payment</button>
           </div>
           </div>
         </form>

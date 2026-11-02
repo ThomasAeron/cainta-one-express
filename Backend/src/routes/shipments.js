@@ -132,7 +132,7 @@ shipmentsRouter.post('/', requireAuth, async (req, res, next) => {
       `update public.shipments
        set payment_method = $1::varchar,
            amount_paid = $2::numeric,
-           payment_status = case when $1::varchar = 'xendit' then 'unpaid' else payment_status end,
+           payment_status = case when $1::varchar in ('xendit', 'cod') then 'unpaid' else payment_status end,
            status = case when $1::varchar = 'xendit' then 'pending_payment' else status end
        where id = $3::uuid`,
       [b.payment_method, b.amount_paid, shipmentId]

@@ -332,9 +332,11 @@ export async function advanceSimulatedDeliveries(pool) {
     `select p.shipment_id
      from public.simulated_delivery_plans p
      join public.shipments s on s.id = p.shipment_id
-    where s.payment_status = 'paid'
-      and (p.status in ('queued', 'assigned') and p.pickup_eta <= now())
-       or (p.status = 'picked_up' and p.delivery_eta <= now())
+    where (s.payment_status = 'paid' or s.payment_method = 'cod')
+      and (
+        (p.status in ('queued', 'assigned') and p.pickup_eta <= now())
+        or (p.status = 'picked_up' and p.delivery_eta <= now())
+      )
      order by p.delivery_eta
      limit 100`
   );
