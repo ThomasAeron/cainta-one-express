@@ -227,6 +227,7 @@ shipmentsRouter.get('/mine', requireAuth, async (req, res, next) => {
          s.dispatched_at,
          s.delivered_at,
          s.created_at,
+         s.payment_method,
          s.payment_status,
          a.line1                as destination_line,
          a.area                 as destination_area,

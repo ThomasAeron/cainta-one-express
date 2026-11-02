@@ -3477,19 +3477,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     let shipments = [];
-    for (let attempt = 0; attempt < 6; attempt += 1) {
+    for (let attempt = 0; attempt < 12; attempt += 1) {
       try {
         shipments = await api('/api/shipments/mine');
-        const paid = shipments.find((shipment) => shipment.payment_status === 'paid');
+        const paid = shipments.find((shipment) =>
+          shipment.payment_method === 'xendit' && shipment.payment_status === 'paid'
+        );
         if (paid) break;
       } catch (error) {
         console.error('Could not load the paid shipment after Xendit return.', error);
         return;
       }
-      await new Promise((resolve) => window.setTimeout(resolve, 2000));
+      await new Promise((resolve) => window.setTimeout(resolve, 2500));
     }
 
-    const paid = shipments.find((shipment) => shipment.payment_status === 'paid');
+    const paid = shipments.find((shipment) =>
+      shipment.payment_method === 'xendit' && shipment.payment_status === 'paid'
+    );
     if (!paid) {
       if (sellSuccess) {
         sellSuccess.textContent = 'Payment received by Xendit. Your order is waiting for confirmation.';
