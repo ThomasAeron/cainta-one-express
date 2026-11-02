@@ -3464,6 +3464,100 @@ document.addEventListener('DOMContentLoaded', async () => {
     sellSubmit?.focus();
   });
 
+  const handlePaymentReturn = async () => {
+    const paymentState = new URLSearchParams(window.location.search).get('payment');
+    if (!paymentState) return;
+    window.history.replaceState({}, document.title, window.location.pathname);
+    if (paymentState === 'failed') {
+      if (sellSuccess) {
+        sellSuccess.textContent = 'Payment was not completed. You can try placing the order again.';
+        sellSuccess.hidden = false;
+      }
+      return;
+    }
+
+    let shipments = [];
+    for (let attempt = 0; attempt < 6; attempt += 1) {
+      try {
+        shipments = await api('/api/shipments/mine');
+        const paid = shipments.find((shipment) => shipment.payment_status === 'paid');
+        if (paid) break;
+      } catch (error) {
+        console.error('Could not load the paid shipment after Xendit return.', error);
+        return;
+      }
+      await new Promise((resolve) => window.setTimeout(resolve, 2000));
+    }
+
+    const paid = shipments.find((shipment) => shipment.payment_status === 'paid');
+    if (!paid) {
+      if (sellSuccess) {
+        sellSuccess.textContent = 'Payment received by Xendit. Your order is waiting for confirmation.';
+        sellSuccess.hidden = false;
+      }
+      return;
+    }
+
+    sellModal?.classList.add('open');
+    sellModal?.setAttribute('aria-hidden', 'false');
+    document.body.classList.add('modal-open');
+    sellForm.hidden = true;
+    if (orderAuthPrompt) orderAuthPrompt.hidden = true;
+    if (deliveryEstimate) deliveryEstimate.hidden = false;
+    if (deliveryEstimateTitle) deliveryEstimateTitle.textContent = 'Your delivery is on the way';
+    if (deliveryEstimateSummary) {
+      deliveryEstimateSummary.textContent = `Payment confirmed for ${paid.tracking_number}.`;
+    }
+    if (deliveryEstimateStatus) deliveryEstimateStatus.textContent = 'Your paid order is being prepared.';
+
+    const plan = paid.restaurant_name && Number.isFinite(Number(paid.destination_lat))
+      ? {
+          driverName: paid.simulated_driver_name || 'Simulated rider',
+          restaurantName: paid.restaurant_name,
+          foodPrepMinutes: Number(paid.food_prep_minutes),
+          driverDepartAt: paid.driver_depart_at,
+          driverArrivalAt: paid.driver_arrival_at,
+          foodReadyAt: paid.food_ready_at,
+          pickupEta: paid.pickup_eta,
+          deliveryEta: paid.delivery_eta
+        }
+      : null;
+    if (!plan) {
+      if (deliveryEstimateStatus) deliveryEstimateStatus.textContent = 'Payment confirmed. Your Online Bazaar order is queued for processing.';
+      return;
+    }
+
+    const destination = {
+      lat: Number(paid.destination_lat),
+      lon: Number(paid.destination_lon),
+      label: `${paid.destination_line}, ${paid.destination_area}`
+    };
+    const pickup = {
+      lat: Number(paid.restaurant_lat),
+      lon: Number(paid.restaurant_lon),
+      label: paid.restaurant_name
+    };
+    const dispatch = {
+      lat: Number(paid.driver_origin_lat),
+      lon: Number(paid.driver_origin_lon),
+      label: `Simulated rider start · ${plan.driverName}`,
+      riderName: plan.driverName
+    };
+    const routePoints = drawDeliveryMap(destination, pickup, null, dispatch);
+    latestDelivery = {
+      shipmentId: paid.id,
+      trackingNumber: paid.tracking_number,
+      summary: 'Paid delivery',
+      status: 'Payment confirmed',
+      delivered: paid.status === 'delivered',
+      estimatedSeconds: Math.max(60, (new Date(plan.deliveryEta).getTime() - Date.now()) / 1000),
+      etaAt: new Date(plan.deliveryEta),
+      assumedAverageSpeedKmh: deliverySettings.assumedAverageSpeedKmh
+    };
+    startDeliverySimulation(routePoints, false, plan);
+  };
+  void handlePaymentReturn();
+
   /* ============================================================
      LIVE BACKGROUND + SCROLL EFFECTS
      ============================================================ */
