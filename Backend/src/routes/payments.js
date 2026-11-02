@@ -86,24 +86,24 @@ paymentsRouter.post('/webhook', async (req, res, next) => {
   try {
     const callbackToken = req.get('x-callback-token');
     if (!process.env.XENDIT_WEBHOOK_TOKEN || callbackToken !== process.env.XENDIT_WEBHOOK_TOKEN) {
-      console.error('Invalid Xendit webhook token.');
       return res.sendStatus(401);
     }
 
-    const event = z.object({
-      status: z.string().optional(),
-      external_id: z.string().uuid().optional(),
-      id: z.string().optional(),
-      paid_amount: z.number().nonnegative().optional()
-    }).passthrough().parse(req.body);
+    const event = req.body && typeof req.body === 'object' ? req.body : {};
 
     if (event.status !== 'PAID') {
       return res.sendStatus(200);
     }
 
-    if (!event.external_id || !event.paid_amount) {
-      console.error('Xendit PAID webhook is missing shipment or amount.', { eventId: event.id });
-      return res.sendStatus(400);
+    if (!event.external_id) {
+      console.warn('Xendit paid test webhook received without external_id.', { eventId: event.id });
+      return res.sendStatus(200);
+    }
+
+    const paidAmount = Number(event.paid_amount);
+    if (!Number.isFinite(paidAmount) || paidAmount <= 0) {
+      console.warn('Xendit paid webhook received without a valid paid_amount.', { eventId: event.id });
+      return res.sendStatus(200);
     }
 
     const result = await query(
@@ -114,7 +114,7 @@ paymentsRouter.post('/webhook', async (req, res, next) => {
        where id = $2
          and coalesce(payment_status, 'unpaid') <> 'paid'
        returning tracking_number`,
-      [event.paid_amount, event.external_id]
+      [paidAmount, event.external_id]
     );
 
     if (result.rowCount === 0) {
