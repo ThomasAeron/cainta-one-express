@@ -27,7 +27,7 @@ paymentsRouter.post('/create-invoice', requireAuth, async (req, res, next) => {
     const shipment = await query(
       `select id, tracking_number
        from public.shipments
-       where id = $1 and created_by = $2 and coalesce(payment_status, 'unpaid') <> 'paid'`,
+       where id = $1::uuid and created_by = $2::uuid and coalesce(payment_status, 'unpaid') <> 'paid'`,
       [shipmentId, req.user.id]
     );
     if (shipment.rowCount === 0) {
@@ -68,7 +68,7 @@ paymentsRouter.post('/create-invoice', requireAuth, async (req, res, next) => {
        set payment_intent_id = $1,
            payment_status = 'unpaid',
            status = 'pending_payment'
-       where id = $2`,
+       where id = $2::uuid`,
       [data.id, shipmentId]
     );
 
@@ -120,7 +120,7 @@ paymentsRouter.post('/webhook', async (req, res, next) => {
        set payment_status = 'paid',
            amount_paid = $1,
            status = 'pending'
-       where id = $2
+       where id = $2::uuid
          and coalesce(payment_status, 'unpaid') <> 'paid'
        returning tracking_number`,
       [paidAmount, shipmentId]
@@ -128,7 +128,7 @@ paymentsRouter.post('/webhook', async (req, res, next) => {
 
     if (result.rowCount === 0) {
       const existing = await query(
-        'select id from public.shipments where id = $1',
+        'select id from public.shipments where id = $1::uuid',
         [shipmentId]
       );
       if (existing.rowCount === 0) {
