@@ -718,7 +718,15 @@ document.addEventListener('DOMContentLoaded', async () => {
       return;
     }
     driverDetailsCard.hidden = false;
-    if (driverAvatar) driverAvatar.textContent = name.charAt(0).toUpperCase();
+    if (driverAvatar) {
+      if (Math.random() > 0.5) {
+        driverAvatar.textContent = name.charAt(0).toUpperCase();
+        driverAvatar.style.background = 'var(--blue)';
+      } else {
+        driverAvatar.innerHTML = '<svg viewBox="0 0 24 24" width="28" height="28" stroke="white" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>';
+        driverAvatar.style.background = '#64748b';
+      }
+    }
     if (driverNameElement) driverNameElement.textContent = name;
     if (driverVehicleElement) {
       const vehicle = String(plan.vehicleModel || 'Motorcycle').trim() || 'Motorcycle';
@@ -1153,7 +1161,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     };
     update();
-    deliverySimulationTimer = window.setInterval(update, 5_000);
+    deliverySimulationTimer = window.setInterval(update, 1_000);
   };
 
   const deliveryBarangays = [
