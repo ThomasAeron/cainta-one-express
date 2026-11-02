@@ -87,33 +87,30 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   const accountStorageKey = 'coe-demo-account-v1';
   const sessionStorageKey = 'coe-demo-session-v1';
-  const profileStorageKey = 'coe-demo-profile-v1';
+  const profileStorageKey = (email = '') => `coe-demo-profile-${encodeURIComponent(String(email).trim().toLowerCase())}`;
   const readLocalRecord = (key) => {
     const value = localStorage.getItem(key);
     return value ? JSON.parse(value) : null;
   };
   const getUserProfile = (account = {}) => {
-    const profile = readLocalRecord(profileStorageKey);
+    const email = account.email || '';
+    const profile = email ? readLocalRecord(profileStorageKey(email)) : null;
     return profile || {
       name: account.name || '',
       address: '',
       orderUpdates: true
     };
   };
-  const saveUserProfile = (profile) => {
-    const currentAccount = readLocalRecord(accountStorageKey);
+  const saveUserProfile = (profile, email) => {
+    if (!email) return profile;
     const normalizedProfile = {
       name: profile.name.trim(),
       address: profile.address.trim(),
       orderUpdates: Boolean(profile.orderUpdates)
     };
-    localStorage.setItem(profileStorageKey, JSON.stringify(normalizedProfile));
-    if (currentAccount) {
-      currentAccount.name = normalizedProfile.name;
-      localStorage.setItem(accountStorageKey, JSON.stringify(currentAccount));
-    }
+    localStorage.setItem(profileStorageKey(email), JSON.stringify(normalizedProfile));
     const currentSession = readLocalRecord(sessionStorageKey);
-    if (currentSession) {
+    if (currentSession?.email === email) {
       currentSession.name = normalizedProfile.name;
       localStorage.setItem(sessionStorageKey, JSON.stringify(currentSession));
     }
@@ -169,11 +166,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     event.preventDefault();
     try {
       const values = new FormData(userProfileForm);
+      const session = readLocalRecord(sessionStorageKey);
       const profile = saveUserProfile({
         name: values.get('name')?.toString() || '',
         address: values.get('address')?.toString() || '',
         orderUpdates: values.has('orderUpdates')
-      });
+      }, session?.email);
       if (userProfileMessage) {
         userProfileMessage.textContent = 'Profile and settings saved.';
         userProfileMessage.classList.remove('is-error');
@@ -199,7 +197,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
   window.addEventListener('coe-profile-updated', renderHeaderUser);
   window.addEventListener('storage', (event) => {
-    if ([sessionStorageKey, profileStorageKey].includes(event.key)) renderHeaderUser();
+    if (event.key === sessionStorageKey || event.key?.startsWith('coe-demo-profile-')) renderHeaderUser();
   });
 
     const accountForm = document.getElementById('account-form');
@@ -375,12 +373,12 @@ document.addEventListener('DOMContentLoaded', async () => {
           name: data.user.full_name || data.user.email,
         };
         localStorage.setItem(sessionStorageKey, JSON.stringify(session));
-        if (creating || !readLocalRecord(profileStorageKey)) {
+        if (creating || !readLocalRecord(profileStorageKey(session.email))) {
           saveUserProfile({
             name: session.name,
             address: '',
             orderUpdates: true,
-          });
+          }, session.email);
         }
         showSignedInAccount(session);
         setAccountMessage(creating ? 'Account created. You are signed in.' : 'You are signed in.');
@@ -410,11 +408,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       event.preventDefault();
       try {
         const values = new FormData(profileForm);
+        const session = readLocalRecord(sessionStorageKey);
         const profile = saveUserProfile({
           name: values.get('name')?.toString() || '',
           address: values.get('address')?.toString() || '',
           orderUpdates: values.has('orderUpdates'),
-        });
+        }, session?.email);
         accountNameDisplay.textContent = profile.name;
         if (profileMessage) {
           profileMessage.textContent = 'Profile and settings saved.';
@@ -895,7 +894,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     return remainingMinutes ? `${hours} hr ${remainingMinutes} min` : `${hours} hr`;
   };
 
-  const drawDeliveryMap = (destination, pickup, routeGeometry = null, dispatch = null) => {
+  const drawDeliveryMap = async (destination, pickup, routeGeometry = null, dispatch = null) => {
     const mapElement = document.getElementById('delivery-map');
     if (!mapElement || !window.L) {
       return false;
@@ -985,12 +984,21 @@ document.addEventListener('DOMContentLoaded', async () => {
         start[0] + ((end[0] - start[0]) * index) / 30,
         start[1] + ((end[1] - start[1]) * index) / 30
       ]);
-    const approachRoutePoints = dispatch
-      ? Array.from({ length: 21 }, (_, index) => [
-        dispatchPoint[0] + ((start[0] - dispatchPoint[0]) * index) / 20,
-        dispatchPoint[1] + ((start[1] - dispatchPoint[1]) * index) / 20
-      ])
-      : [start];
+    let approachRoutePoints = dispatch ? [dispatchPoint, start] : [start];
+    if (dispatch) {
+      try {
+        const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${dispatchPoint[1]},${dispatchPoint[0]};${start[1]},${start[0]}?overview=full&geometries=geojson`;
+        const response = await fetch(osrmUrl);
+        if (!response.ok) throw new Error(`OSRM returned ${response.status}`);
+        const data = await response.json();
+        const geometry = data.routes?.[0]?.geometry;
+        if (geometry?.coordinates?.length) {
+          approachRoutePoints = geometry.coordinates.map(([lon, lat]) => [lat, lon]);
+        }
+      } catch (error) {
+        console.warn('Could not fetch the driver approach route; using a straight-line fallback.', error);
+      }
+    }
     if (dispatch) {
       window.L.polyline(approachRoutePoints, {
         color: '#e58916',
@@ -1730,7 +1738,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           ...caintaAreas.Junction,
           label: 'Approximate Cainta dispatch point'
         };
-    const routePoints = drawDeliveryMap(destination, pickup, route?.geometry, dispatch);
+    const routePoints = await drawDeliveryMap(destination, pickup, route?.geometry, dispatch);
     if (deliveryEstimateTitle) deliveryEstimateTitle.textContent = 'Your delivery is on the way';
     latestDelivery = {
       shipmentId: created.id,
@@ -3582,7 +3590,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       label: `Simulated rider start · ${plan.driverName}`,
       riderName: plan.driverName
     };
-    const routePoints = drawDeliveryMap(destination, pickup, null, dispatch);
+    const routePoints = await drawDeliveryMap(destination, pickup, null, dispatch);
     latestDelivery = {
       shipmentId: paid.id,
       trackingNumber: paid.tracking_number,
