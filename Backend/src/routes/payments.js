@@ -95,8 +95,17 @@ paymentsRouter.post('/webhook', async (req, res, next) => {
       return res.sendStatus(200);
     }
 
-    if (!event.external_id) {
+    const shipmentId = typeof event.external_id === 'string' ? event.external_id.trim() : '';
+    if (!shipmentId) {
       console.warn('Xendit paid test webhook received without external_id.', { eventId: event.id });
+      return res.sendStatus(200);
+    }
+
+    if (!z.string().uuid().safeParse(shipmentId).success) {
+      console.warn('Ignoring Xendit webhook with a non-shipment external_id.', {
+        eventId: event.id,
+        externalId: shipmentId
+      });
       return res.sendStatus(200);
     }
 
@@ -114,16 +123,16 @@ paymentsRouter.post('/webhook', async (req, res, next) => {
        where id = $2
          and coalesce(payment_status, 'unpaid') <> 'paid'
        returning tracking_number`,
-      [paidAmount, event.external_id]
+      [paidAmount, shipmentId]
     );
 
     if (result.rowCount === 0) {
       const existing = await query(
         'select id from public.shipments where id = $1',
-        [event.external_id]
+        [shipmentId]
       );
       if (existing.rowCount === 0) {
-        console.error('Xendit payment did not match a shipment.', { externalId: event.external_id });
+        console.warn('Xendit payment did not match a shipment.', { externalId: shipmentId });
         return res.sendStatus(404);
       }
     } else {
