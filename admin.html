@@ -909,8 +909,8 @@ $('out').onclick = () => { localStorage.removeItem(SESSION_KEY); location.href =
     throw e;
   }
 
-  // Check role. Only admin or staff can enter the admin panel.
-  const allowedRoles = ['admin', 'staff'];
+  // Check role. Only admin can enter the admin panel.
+  const allowedRoles = ['admin'];
   const hasAccess = me.roles?.some(r => allowedRoles.includes(r));
 
   if (!hasAccess) {
@@ -919,7 +919,7 @@ $('out').onclick = () => { localStorage.removeItem(SESSION_KEY); location.href =
     gate.hidden = false;
     gate.innerHTML = `
       <h2 style="justify-content:center;font-size:1.4rem;color:var(--navy)">Access restricted</h2>
-      <p>You need an admin or staff account to open this panel.</p>
+      <p>You need an admin account to open this panel.</p>
       <p style="margin-top:8px;color:var(--muted);font-size:.85rem">
         Signed in as ${esc(session.email)} (${esc(me.roles?.join(', ') || 'no role')})
       </p>

@@ -14,7 +14,7 @@ export const shipmentsRouter = Router();
 shipmentsRouter.get(
   '/',
   requireAuth,
-  requireRole('admin', 'staff'),
+  requireRole('admin'),
   async (req, res, next) => {
     try {
       const { rows } = await query(
@@ -190,7 +190,7 @@ shipmentsRouter.post('/', requireAuth, async (req, res, next) => {
 shipmentsRouter.post(
   '/:id/payment-confirmation',
   requireAuth,
-  requireRole('admin', 'staff'),
+  requireRole('admin'),
   async (req, res, next) => {
     try {
       const { amount } = z.object({ amount: z.number().positive() }).parse(req.body);
@@ -267,12 +267,12 @@ shipmentsRouter.get('/mine', requireAuth, async (req, res, next) => {
 
 // ------------------------------------------------------------------
 // GET /api/shipments/operations-map
-// Admin/staff map data: facilities, drivers, and latest active positions.
+// Admin map data: facilities, drivers, and latest active positions.
 // ------------------------------------------------------------------
 shipmentsRouter.get(
   '/operations-map',
   requireAuth,
-  requireRole('admin', 'staff'),
+  requireRole('admin'),
   async (req, res, next) => {
     try {
       await advanceSimulatedDeliveries(pool);
@@ -402,7 +402,7 @@ shipmentsRouter.get(
 
 // ------------------------------------------------------------------
 // GET /api/shipments/:id  — one shipment with its event timeline
-// RBAC: admin/staff/driver see any; customer sees only own
+// RBAC: admin/driver see any; customer sees only own
 // ------------------------------------------------------------------
 shipmentsRouter.get('/:id', requireAuth, async (req, res, next) => {
   try {
@@ -454,9 +454,7 @@ shipmentsRouter.get('/:id', requireAuth, async (req, res, next) => {
     }
     const shipment = rows[0];
 
-    const isPrivileged = req.user.roles.some((r) =>
-      ['admin', 'staff'].includes(r)
-    );
+    const isPrivileged = req.user.roles.some((r) => ['admin'].includes(r));
     if (!isPrivileged && shipment.created_by !== req.user.id) {
       return res.status(403).json({ error: 'Not allowed to view this shipment' });
     }
@@ -490,7 +488,7 @@ shipmentsRouter.get('/:id', requireAuth, async (req, res, next) => {
 // ------------------------------------------------------------------
 // POST /api/shipments/:id/advance
 // Push the shipment to a new status and record an event.
-// RBAC: staff / admin or the shipment creator.
+// RBAC: admin or the shipment creator.
 // ------------------------------------------------------------------
 const advanceSchema = z.object({
   event_type: z.enum([
@@ -534,13 +532,11 @@ shipmentsRouter.post(
 
       // RBAC: privileged roles can advance any shipment.
       // The creator (typically the customer who placed the order) can advance their own.
-      const isPrivileged = req.user.roles.some((r) =>
-        ['staff', 'admin'].includes(r)
-      );
+      const isPrivileged = req.user.roles.some((r) => ['admin'].includes(r));
       const isCreator = found.rows[0].created_by === req.user.id;
       if (!isPrivileged && !isCreator) {
         return res.status(403).json({
-          error: 'Requires one of: staff, admin — or ownership of the shipment',
+          error: 'Requires an admin role or ownership of the shipment',
         });
       }
       if (isCreator && !isPrivileged) {

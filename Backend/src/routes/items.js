@@ -62,7 +62,7 @@ const createItemSchema = z.object({
 itemsRouter.post(
   '/',
   requireAuth,
-  requireRole('admin', 'staff'),
+  requireRole('admin'),
   async (req, res, next) => {
     try {
       const parsed = createItemSchema.safeParse(req.body);

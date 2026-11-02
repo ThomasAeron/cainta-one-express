@@ -3,7 +3,7 @@ import { z } from 'zod';
 
 import { query } from '../db.js';
 import { hashPassword, requireAuth, signToken, verifyPassword } from '../auth.js';
-import { checkOtp } from './otp.js';
+import { checkOtp } from '../../otp.js';
 
 export const authRouter = Router();
 
@@ -12,7 +12,7 @@ const registerSchema = z.object({
   password: z.string().min(8).max(72),
   full_name: z.string().min(1).max(120),
   phone: z.string().max(20).optional(),
-  otp_code: z.string().length(6), // ADD THIS
+  otp_code: z.string().regex(/^\d{6}$/),
 });
 
 authRouter.post('/register', async (req, res, next) => {
@@ -25,7 +25,6 @@ authRouter.post('/register', async (req, res, next) => {
     const { email, password, full_name, phone, otp_code } = parsed.data;
     const lowerEmail = email.toLowerCase();
 
-    // Verify the OTP before creating the account
     try {
       await checkOtp(lowerEmail, otp_code);
     } catch (err) {

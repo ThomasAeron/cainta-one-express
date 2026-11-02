@@ -1037,7 +1037,7 @@
         });
         if (!res.ok) return;
         const me = await res.json();
-        if (me.roles?.some(r => ['admin', 'staff'].includes(r))) {
+        if (me.roles?.some(r => ['admin'].includes(r))) {
           document.getElementById('nav-admin').hidden = false;
         }
       } catch (e) { /* silent */ }

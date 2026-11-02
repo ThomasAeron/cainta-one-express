@@ -8,12 +8,12 @@ export const inventoryRouter = Router();
 // ------------------------------------------------------------------
 // GET /api/inventory/low-stock
 // Reads the v_low_stock_products VIEW.
-// Auth: staff / admin only (this is operational data).
+// Auth: admin only (this is operational data).
 // ------------------------------------------------------------------
 inventoryRouter.get(
   '/low-stock',
   requireAuth,
-  requireRole('staff', 'admin'),
+  requireRole('admin'),
   async (req, res, next) => {
     try {
       const { rows } = await query(
@@ -38,7 +38,7 @@ inventoryRouter.get(
 inventoryRouter.get(
   '/alerts',
   requireAuth,
-  requireRole('staff', 'admin'),
+  requireRole('admin'),
   async (req, res, next) => {
     try {
       const { rows } = await query(
