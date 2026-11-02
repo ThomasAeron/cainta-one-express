@@ -99,7 +99,7 @@ shipmentsRouter.post('/', requireAuth, async (req, res, next) => {
     await client.query("select pg_advisory_xact_lock(hashtext('cainta-shipment-tracking'))");
     const year = new Date().getFullYear();
     const seqRow = await client.query(
-      `select count(*) + 1 as n from shipments where tracking_number like $1::varchar`,
+      `select count(*) + 1 as n from shipments where tracking_number like $1::text`,
       [`COE-${year}-%`]
     );
     const tracking = `COE-${year}-${String(seqRow.rows[0].n).padStart(6, '0')}`;
