@@ -1,7 +1,7 @@
 const ROAD_DISTANCE_FACTOR = 1.35;
 const simulatedDeliverySettings = Object.freeze({
-  approachSpeedKmh: 50,
-  deliverySpeedKmh: 50
+  approachSpeedKmh: 60,
+  deliverySpeedKmh: 60
 });
 
 for (const [name, speed] of Object.entries(simulatedDeliverySettings)) {

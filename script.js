@@ -978,12 +978,29 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     window.L.marker(end, { icon: destinationIcon }).addTo(deliveryMap)
       .bindPopup(`Drop-off · ${destination.label}, Cainta`);
-    const routePoints = routeGeometry
-      ? routeGeometry.coordinates.map(([lon, lat]) => [lat, lon])
-      : Array.from({ length: 31 }, (_, index) => [
-        start[0] + ((end[0] - start[0]) * index) / 30,
-        start[1] + ((end[1] - start[1]) * index) / 30
-      ]);
+    let routePoints = [];
+    if (routeGeometry?.coordinates?.length) {
+      routePoints = routeGeometry.coordinates.map(([lon, lat]) => [lat, lon]);
+    } else {
+      try {
+        const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${start[1]},${start[0]};${end[1]},${end[0]}?overview=full&geometries=geojson`;
+        const response = await fetch(osrmUrl);
+        if (!response.ok) throw new Error(`OSRM returned ${response.status}`);
+        const data = await response.json();
+        const geometry = data.routes?.[0]?.geometry;
+        if (geometry?.coordinates?.length) {
+          routePoints = geometry.coordinates.map(([lon, lat]) => [lat, lon]);
+        }
+      } catch (error) {
+        console.warn('Could not fetch the delivery road route; using a straight-line fallback.', error);
+      }
+      if (!routePoints.length) {
+        routePoints = Array.from({ length: 31 }, (_, index) => [
+          start[0] + ((end[0] - start[0]) * index) / 30,
+          start[1] + ((end[1] - start[1]) * index) / 30
+        ]);
+      }
+    }
     let approachRoutePoints = dispatch ? [dispatchPoint, start] : [start];
     if (dispatch) {
       try {
