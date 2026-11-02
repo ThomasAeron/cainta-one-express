@@ -8,33 +8,38 @@ const OTP_RESEND_COOLDOWN_MS = 60 * 1000;
 const normalizeEmail = (email) => email.trim().toLowerCase();
 
 async function sendEmail(email, code) {
-  if (!process.env.BREVO_API_KEY) {
+  if (!process.env.SENDGRID_API_KEY) {
     const error = new Error('Email verification is not configured.');
     error.statusCode = 503;
     throw error;
   }
 
-  const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+  const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
     method: 'POST',
     headers: {
-      'api-key': process.env.BREVO_API_KEY,
+      Authorization: `Bearer ${process.env.SENDGRID_API_KEY}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      sender: {
-        name: process.env.BREVO_SENDER_NAME || 'Cainta One Express',
-        email: process.env.BREVO_SENDER_EMAIL || 'thomasaeronbonavente@gmail.com',
+      personalizations: [{
+        to: [{ email }],
+      }],
+      from: {
+        email: 'thomasaeronbonavente@gmail.com',
+        name: 'Cainta One Express',
       },
-      to: [{ email }],
       subject: 'Your Cainta One Express verification code',
-      textContent: `Your verification code is: ${code}\n\nThis code expires in ${OTP_TTL_MINUTES} minutes. If you did not request this, ignore this email.`,
+      content: [{
+        type: 'text/plain',
+        value: `Your verification code is: ${code}\n\nThis code expires in ${OTP_TTL_MINUTES} minutes. If you did not request this, ignore this email.`,
+      }],
     }),
     signal: AbortSignal.timeout(15_000),
   });
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error('Brevo request failed.', { status: response.status, error: errorText });
+    console.error('SendGrid request failed.', { status: response.status, error: errorText });
     throw new Error('Failed to send verification email.');
   }
 }
