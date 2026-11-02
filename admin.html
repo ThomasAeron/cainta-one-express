@@ -414,7 +414,12 @@ function initializeOperationsMap() {
     $('map-status').textContent = 'The map library did not load. Location details are still available in the list.';
     return null;
   }
-  operationsMap = window.L.map('operations-map').setView([14.58, 121.11], 13);
+  const caintaBounds = [[14.547851, 121.0946307], [14.6365632, 121.1450774]];
+  operationsMap = window.L.map('operations-map', {
+    maxBounds: caintaBounds,
+    maxBoundsViscosity: 1.0,
+    minZoom: 13
+  }).setView([14.5785, 121.1130], 14);
   window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
     maxZoom: 19
