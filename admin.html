@@ -503,7 +503,10 @@ function renderOperationsMap(data) {
   const addLocation = ({ type, title, details, lat, lon, updatedAt, listRoot, simulated = false }) => {
     const latitude = Number(lat);
     const longitude = Number(lon);
-    const hasCoordinates = Number.isFinite(latitude) && Number.isFinite(longitude);
+    const hasCoordinates = Number.isFinite(latitude)
+      && Number.isFinite(longitude)
+      && latitude !== 0
+      && longitude !== 0;
     const item = document.createElement('li');
     const button = document.createElement('button');
     button.type = 'button';
@@ -640,8 +643,18 @@ function renderOperationsMap(data) {
     });
   });
 
-  if (operationsMap && bounds.length && !operationsMapFitted) {
-    operationsMap.fitBounds(bounds, { padding: [24, 24], maxZoom: 15 });
+  const validBounds = bounds.filter(([latitude, longitude]) =>
+    Number.isFinite(latitude)
+    && Number.isFinite(longitude)
+    && latitude !== 0
+    && longitude !== 0
+  );
+  if (operationsMap && validBounds.length && !operationsMapFitted) {
+    operationsMap.fitBounds(validBounds, { padding: [50, 50], maxZoom: 15 });
+    operationsMapFitted = true;
+    window.setTimeout(() => operationsMap?.invalidateSize(), 200);
+  } else if (operationsMap && !operationsMapFitted) {
+    operationsMap.setView([14.5785, 121.1130], 14);
     operationsMapFitted = true;
     window.setTimeout(() => operationsMap?.invalidateSize(), 200);
   }
