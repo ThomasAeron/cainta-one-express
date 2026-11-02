@@ -2712,6 +2712,54 @@ body.modal-open {
   font-size: 0.9rem;
 }
 
+.driver-details-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 12px 0;
+  padding: 12px;
+  border: 1px solid #dce8f5;
+  border-radius: 12px;
+  background: #f8fbff;
+}
+
+.driver-avatar {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  flex: 0 0 48px;
+  border-radius: 50%;
+  background: var(--blue);
+  color: #fff;
+  font-size: 1.2rem;
+  font-weight: 800;
+}
+
+.driver-info h4 {
+  margin: 0;
+  color: var(--navy);
+  font-size: 1rem;
+}
+
+.driver-info p {
+  margin: 2px 0 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.driver-badge {
+  display: inline-block;
+  margin-top: 4px !important;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: #e2efff;
+  color: var(--blue) !important;
+  font-size: 0.7rem !important;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
 .delivery-milestones {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

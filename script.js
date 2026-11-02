@@ -621,6 +621,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   const deliveryEstimateTitle = document.getElementById('delivery-estimate-title');
   const deliveryEstimateSummary = document.getElementById('delivery-estimate-summary');
   const deliveryEstimateStatus = document.getElementById('delivery-estimate-status');
+  const driverDetailsCard = document.getElementById('driver-details-card');
+  const driverAvatar = document.getElementById('driver-avatar');
+  const driverNameElement = document.getElementById('driver-name');
+  const driverVehicleElement = document.getElementById('driver-vehicle');
   const deliveryAddressPreview = document.getElementById('delivery-address-preview');
   const deliveryMapElement = document.getElementById('delivery-map');
   const deliveryBarangayField = document.getElementById('delivery-barangay-field');
@@ -705,6 +709,23 @@ document.addEventListener('DOMContentLoaded', async () => {
   let sellIsFoodOrder = false;
   let bazaarCheckoutStarted = false;
   let bazaarCurrentStep = 'browse';
+
+  const renderDriverDetails = (plan) => {
+    const name = String(plan?.driverName || '').trim();
+    if (!driverDetailsCard) return;
+    if (!name) {
+      driverDetailsCard.hidden = true;
+      return;
+    }
+    driverDetailsCard.hidden = false;
+    if (driverAvatar) driverAvatar.textContent = name.charAt(0).toUpperCase();
+    if (driverNameElement) driverNameElement.textContent = name;
+    if (driverVehicleElement) {
+      const vehicle = String(plan.vehicleModel || 'Motorcycle').trim() || 'Motorcycle';
+      const plate = String(plan.vehiclePlate || 'Plate unavailable').trim() || 'Plate unavailable';
+      driverVehicleElement.textContent = `${vehicle} · ${plate}`;
+    }
+  };
   // ---- Search items -------------------------------------------------------
   // Food Express entries are menu picks. Use the restaurant as the category chip.
   // Add or update menu picks here to match the restaurants and menus you offer.
@@ -983,6 +1004,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const approachRoutePoints = routes?.approachRoutePoints;
     const deliveryRoutePoints = routes?.deliveryRoutePoints;
     const driverName = plan.driverName || 'Simulated rider';
+    renderDriverDetails(plan);
     const restaurantName = plan.restaurantName;
     const milestones = [
       { label: 'Order received', time: new Date(new Date(plan.foodReadyAt).getTime() - plan.foodPrepMinutes * 60_000) },
@@ -3518,6 +3540,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const plan = paid.restaurant_name && Number.isFinite(Number(paid.destination_lat))
       ? {
           driverName: paid.simulated_driver_name || 'Simulated rider',
+          vehicleModel: paid.simulated_vehicle_model,
+          vehiclePlate: paid.vehicle_plate,
           restaurantName: paid.restaurant_name,
           foodPrepMinutes: Number(paid.food_prep_minutes),
           driverDepartAt: paid.driver_depart_at,
@@ -3561,6 +3585,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       etaAt: new Date(plan.deliveryEta),
       assumedAverageSpeedKmh: deliverySettings.assumedAverageSpeedKmh
     };
+    renderDriverDetails(plan);
     startDeliverySimulation(routePoints, false, plan);
   };
   void handlePaymentReturn();
