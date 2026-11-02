@@ -1599,11 +1599,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       setDeliveryAddressFeedback(error, 'error');
       throw new Error(error);
     }
-    deliveryEstimate.hidden = false;
-    deliveryEstimate.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    deliveryEstimateSummary.textContent = '';
-    deliveryEstimateStatus.textContent = 'Preparing your Cainta delivery map...';
-    if (deliveryMapLink) deliveryMapLink.hidden = true;
     if (deliveryPreviewTimer) window.clearTimeout(deliveryPreviewTimer);
     deliveryPreviewRequest += 1;
     const preview = cachedDeliveryPreview?.key === deliveryPreviewKey()
@@ -1675,6 +1670,24 @@ document.addEventListener('DOMContentLoaded', async () => {
         items
       })
     });
+    const payment = await api('/api/payments/create-invoice', {
+      method: 'POST',
+      body: JSON.stringify({
+        shipmentId: created.id,
+        amount: orderTotal,
+        description: `${sellIsFoodOrder ? 'Food Express' : 'Cainta One Express'} order ${created.tracking_number}`
+      })
+    });
+    if (!payment.checkout_url) {
+      throw new Error('Xendit did not return a secure checkout link. Your order was created, but payment was not started.');
+    }
+    if (sellSuccess) {
+      sellSuccess.textContent = `Order ${created.tracking_number} is ready for secure payment. Redirecting to Xendit...`;
+      sellSuccess.hidden = false;
+    }
+    window.location.assign(payment.checkout_url);
+    return;
+
     const deliveryPlan = created.delivery_plan;
     if (sellIsFoodOrder && !deliveryPlan) {
       throw new Error(`Order ${created.tracking_number} was created, but the server did not return its rider schedule. Check My Orders before placing it again.`);
@@ -1728,22 +1741,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     } else if (!window.L && deliveryEstimateStatus) {
       deliveryEstimateStatus.textContent = 'The map library is unavailable; the delivery timeline will still run.';
     }
-    const payment = await api('/api/payments/create-invoice', {
-      method: 'POST',
-      body: JSON.stringify({
-        shipmentId: created.id,
-        amount: orderTotal,
-        description: `${sellIsFoodOrder ? 'Food Express' : 'Cainta One Express'} order ${created.tracking_number}`
-      })
-    });
-    if (!payment.checkout_url) {
-      throw new Error('Xendit did not return a secure checkout link. Your order was created, but payment was not started.');
-    }
-    if (sellSuccess) {
-      sellSuccess.textContent = `Order ${created.tracking_number} is ready for secure payment. Redirecting to Xendit...`;
-      sellSuccess.hidden = false;
-    }
-    window.location.assign(payment.checkout_url);
   };
 
   deliveryAddress?.addEventListener('input', () => {

@@ -45,7 +45,9 @@ paymentsRouter.post('/create-invoice', requireAuth, async (req, res, next) => {
         external_id: shipmentId,
         amount,
         description: description || `Cainta One Express Order - ${shipment.rows[0].tracking_number}`,
-        invoice_duration: 86400
+        invoice_duration: 86400,
+        success_redirect_url: 'https://cainta-one-express.onrender.com/main.html?payment=success',
+        failure_redirect_url: 'https://cainta-one-express.onrender.com/main.html?payment=failed'
       }),
       signal: AbortSignal.timeout(15_000)
     });
