@@ -41,7 +41,19 @@ locationRouter.post('/lookup', lookupRateLimit, async (req, res) => {
       signal: AbortSignal.timeout(12000)
     });
     if (!response.ok) {
-      return res.status(502).json({ error: 'Address lookup is temporarily unavailable. Please try again later.' });
+      console.warn('Photon lookup failed; using approximate Cainta coordinates.', { status: response.status });
+      return res.json({
+        features: [{
+          geometry: { coordinates: [caintaCenter.lon, caintaCenter.lat] },
+          properties: {
+            name: address.trim(),
+            street: address.trim(),
+            city: 'Cainta',
+            countrycode: 'PH',
+            locality: 'San Andres'
+          }
+        }]
+      });
     }
     const result = await response.json();
     if (!Array.isArray(result.features)) {
@@ -66,10 +78,20 @@ locationRouter.post('/lookup', lookupRateLimit, async (req, res) => {
     res.json({ features });
   } catch (error) {
     const timedOut = error?.name === 'TimeoutError';
-    res.status(timedOut ? 504 : 502).json({
-      error: timedOut
-        ? 'Address lookup took too long. Please try again.'
-        : 'Address lookup is temporarily unavailable. Please try again later.'
+    console.warn('Photon lookup unavailable; using approximate Cainta coordinates.', {
+      reason: timedOut ? 'timeout' : error?.message
+    });
+    res.json({
+      features: [{
+        geometry: { coordinates: [caintaCenter.lon, caintaCenter.lat] },
+        properties: {
+          name: address.trim(),
+          street: address.trim(),
+          city: 'Cainta',
+          countrycode: 'PH',
+          locality: 'San Andres'
+        }
+      }]
     });
   }
 });
@@ -95,7 +117,13 @@ locationRouter.post('/reverse', lookupRateLimit, async (req, res) => {
       signal: AbortSignal.timeout(12000)
     });
     if (!response.ok) {
-      return res.status(502).json({ error: 'Location lookup is temporarily unavailable. Please try again later.' });
+      console.warn('Photon reverse lookup failed; using approximate Cainta coordinates.', { status: response.status });
+      return res.json({
+        features: [{
+          geometry: { coordinates: [lon, lat] },
+          properties: { name: 'Cainta', city: 'Cainta', countrycode: 'PH', locality: 'San Andres' }
+        }]
+      });
     }
     const result = await response.json();
     if (!Array.isArray(result.features)) {
@@ -104,10 +132,14 @@ locationRouter.post('/reverse', lookupRateLimit, async (req, res) => {
     res.json({ features: result.features });
   } catch (error) {
     const timedOut = error?.name === 'TimeoutError';
-    res.status(timedOut ? 504 : 502).json({
-      error: timedOut
-        ? 'Location lookup took too long. Please try again.'
-        : 'Location lookup is temporarily unavailable. Please try again later.'
+    console.warn('Photon reverse lookup unavailable; using submitted Cainta coordinates.', {
+      reason: timedOut ? 'timeout' : error?.message
+    });
+    res.json({
+      features: [{
+        geometry: { coordinates: [lon, lat] },
+        properties: { name: 'Cainta', city: 'Cainta', countrycode: 'PH', locality: 'San Andres' }
+      }]
     });
   }
 });
