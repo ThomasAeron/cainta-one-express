@@ -124,7 +124,7 @@ shipmentsRouter.post('/', requireAuth, async (req, res, next) => {
       ]
     );
 
-    const shipmentId = result.rows[0].shipment_id;
+    const shipmentId = String(result.rows[0].shipment_id);
 
     // Save the payment method and amount to the shipment.
     // (The stored procedure doesn't know about these columns yet.)
