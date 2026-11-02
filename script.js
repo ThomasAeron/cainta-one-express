@@ -1656,18 +1656,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const preview = cachedDeliveryPreview?.key === deliveryPreviewKey()
       ? cachedDeliveryPreview
       : await calculateDeliveryEstimate(addressText);
-    const {
-      destination,
-      pickup,
-      route,
-      routeError,
-      directDistanceKm,
-      estimatedSeconds,
-      summary: routeSummary,
-      hasRestaurantCoordinates
-    } = preview;
-    const start = [pickup.lat, pickup.lon];
-    const end = [destination.lat, destination.lon];
+    const { destination, pickup } = preview;
     const osmRoute = `https://www.openstreetmap.org/directions?engine=fossgis_osrm_car&route=${pickup.lat},${pickup.lon};${destination.lat},${destination.lon}`;
     if (deliveryMapLink) {
       deliveryMapLink.href = osmRoute;
@@ -1738,61 +1727,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       sellSuccess.hidden = false;
     }
     window.location.assign(payment.checkout_url);
-    return;
-
-    const deliveryPlan = created.delivery_plan;
-    if (sellIsFoodOrder && !deliveryPlan) {
-      throw new Error(`Order ${created.tracking_number} was created, but the server did not return its rider schedule. Check My Orders before placing it again.`);
-    }
-    const dispatch = sellIsFoodOrder
-      ? {
-          lat: deliveryPlan.driverOrigin.lat,
-          lon: deliveryPlan.driverOrigin.lon,
-          label: `Simulated rider start · ${deliveryPlan.driverName}`,
-          riderName: deliveryPlan.driverName
-        }
-      : {
-          ...caintaAreas.Junction,
-          label: 'Approximate Cainta dispatch point'
-        };
-    const routePoints = await drawDeliveryMap(destination, pickup, route?.geometry, dispatch);
-    if (deliveryEstimateTitle) deliveryEstimateTitle.textContent = 'Your delivery is on the way';
-    latestDelivery = {
-      shipmentId: created.id,
-      trackingNumber: created.tracking_number,
-      summary: routeSummary,
-      status: 'Order confirmed',
-      delivered: false,
-      estimatedSeconds: deliveryPlan?.estimatedDeliveryMinutes
-        ? deliveryPlan.estimatedDeliveryMinutes * 60
-        : estimatedSeconds,
-      etaAt: deliveryPlan ? new Date(deliveryPlan.deliveryEta) : new Date(Date.now() + estimatedSeconds * 1000),
-      assumedAverageSpeedKmh: deliverySettings.assumedAverageSpeedKmh
-    };
-    
-    const foodOrderTotal = foodCartContents.reduce((amount, line) => amount + line.entry.price * line.quantity, 0);
-    deliveryEstimateSummary.textContent = sellIsFoodOrder
-      ? `${foodOrderSummary} from ${selectedRestaurant.name} · PHP ${foodOrderTotal.toFixed(2)} · ${addressText} · Rider ${deliveryPlan.driverName} · ${deliveryPlan.estimatedDeliveryMinutes} min estimated`
-      : `${addressText} · ${routeSummary}`;
-    if (sellIsFoodOrder) {
-      startDeliverySimulation(
-        routePoints,
-        Boolean(route),
-        deliveryPlan
-      );
-    } else {
-      const pickupText = hasRestaurantCoordinates
-        ? `Route starts at the mapped ${selectedRestaurant.name} pickup location`
-        : `Route starts at an approximate ${selectedRestaurant.name} area location`;
-      deliveryEstimateStatus.textContent = route
-        ? `${pickupText} and ends at the matched delivery address.`
-        : `${routeError || 'Road route unavailable.'} ${pickupText}; the fallback route is approximate.`;
-    }
-    if (!route && routeError && !window.L && deliveryEstimateStatus) {
-      deliveryEstimateStatus.textContent = `${routeError} The map library is also unavailable, but the delivery timeline will still run.`;
-    } else if (!window.L && deliveryEstimateStatus) {
-      deliveryEstimateStatus.textContent = 'The map library is unavailable; the delivery timeline will still run.';
-    }
   };
 
   deliveryAddress?.addEventListener('input', () => {
