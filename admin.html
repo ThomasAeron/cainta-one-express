@@ -910,8 +910,11 @@ $('out').onclick = () => { localStorage.removeItem(SESSION_KEY); location.href =
   }
 
   // Check role. Only admin can enter the admin panel.
-  const allowedRoles = ['admin'];
-  const hasAccess = me.roles?.some(r => allowedRoles.includes(r));
+  const userRoles = Array.isArray(me.roles) ? me.roles : [me.roles];
+  const stringRoles = userRoles
+    .filter((role) => role !== null && role !== undefined)
+    .map((role) => String(role).toLowerCase());
+  const hasAccess = stringRoles.includes('admin');
 
   if (!hasAccess) {
     // Show the gate with a permission-denied message.
@@ -921,7 +924,7 @@ $('out').onclick = () => { localStorage.removeItem(SESSION_KEY); location.href =
       <h2 style="justify-content:center;font-size:1.4rem;color:var(--navy)">Access restricted</h2>
       <p>You need an admin account to open this panel.</p>
       <p style="margin-top:8px;color:var(--muted);font-size:.85rem">
-        Signed in as ${esc(session.email)} (${esc(me.roles?.join(', ') || 'no role')})
+        Signed in as ${esc(session.email)} (${esc(stringRoles.join(', ') || 'no role')})
       </p>
       <a class="btn" href="main.html">Back to website</a>
       <a class="btn alt" href="account.html" style="margin-left:8px">Switch account</a>
