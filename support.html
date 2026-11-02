@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Help & Support | Cainta One Express</title>
+    <meta name="description" content="Find answers and contact Cainta One Express support." />
+    <link rel="icon" type="image/png" href="delivery-icon.png" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body class="account-page support-page">
+    <header>
+      <div class="container account-nav">
+        <a class="account-brand" href="main.html#home" aria-label="Cainta One Express home">
+          <span class="logo-mark" aria-hidden="true"><img src="delivery-icon.png" alt="" width="46" height="46" /></span>
+          <span>Cainta One Express</span>
+        </a>
+        <a class="nav-cta" href="main.html#home">Home</a>
+      </div>
+    </header>
+    <main class="support-layout">
+      <section class="support-hero">
+        <p class="account-kicker">Cainta One Express Support</p>
+        <h1>How can we help?</h1>
+        <p>Search our help topics or choose a category to find the right answer quickly.</p>
+        <label class="support-search"><span aria-hidden="true">⌕</span><input id="support-search" type="search" placeholder="Search for solutions" autocomplete="off" /></label>
+      </section>
+      <section class="support-content" aria-labelledby="topics-heading">
+        <div class="support-heading"><div><p class="support-eyebrow">Help center</p><h2 id="topics-heading">What do you need help with?</h2></div><span id="support-count" class="support-count">5 answers</span></div>
+        <div class="support-topics">
+          <a class="support-topic" href="#orders" data-support-topic="orders"><span>📦</span><strong>Orders</strong><small>Request and track a delivery</small></a>
+          <a class="support-topic" href="#delivery" data-support-topic="delivery"><span>🛵</span><strong>Delivery</strong><small>Areas, timing, and rider updates</small></a>
+          <a class="support-topic" href="#account" data-support-topic="account"><span>👤</span><strong>Account</strong><small>Sign in and manage your details</small></a>
+          <a class="support-topic" href="#bazaar" data-support-topic="bazaar"><span>🛍️</span><strong>Online Bazaar</strong><small>Shops, products, and sellers</small></a>
+          <a class="support-topic" href="#payments" data-support-topic="payments"><span>💳</span><strong>Payments</strong><small>Fees and payment questions</small></a>
+          <a class="support-topic" href="#contact-support" data-support-topic="contact"><span>💬</span><strong>Contact support</strong><small>Talk to the Cainta One team</small></a>
+        </div>
+        <div class="support-faq-grid">
+          <article class="support-faq" id="orders" data-support-search="orders request order delivery"><h3>How do I request a delivery?</h3><p>Choose Food Express or Online Bazaar on the home page, complete the request form, and submit your pickup and delivery details.</p></article>
+          <article class="support-faq" id="delivery" data-support-search="delivery areas timing rider track"><h3>Where do you deliver?</h3><p>We serve Cainta, Rizal and nearby supported communities. Your available delivery estimate appears after you enter the address.</p></article>
+          <article class="support-faq" id="account" data-support-search="account sign in password verification email"><h3>I cannot access my account.</h3><p>Use the account page to sign in or create an account. New accounts require a verification code sent to your email.</p></article>
+          <article class="support-faq" id="bazaar" data-support-search="bazaar shop product seller marketplace"><h3>How does the Online Bazaar work?</h3><p>Browse available products, or use Create a Shop to submit your seller details and start managing your store.</p></article>
+          <article class="support-faq" id="payments" data-support-search="payment fee price cash"><h3>What should I do about a payment question?</h3><p>Include your order details and a screenshot or receipt when contacting support so we can investigate quickly.</p></article>
+        </div>
+        <section class="support-contact-card" id="contact-support"><div><p class="support-eyebrow">Still need help?</p><h2>Our team is ready to assist.</h2><p>Tell us what happened and include your order email or reference number.</p></div><div class="support-contact-actions"><a class="btn" href="mailto:cainta1express@gmail.com?subject=Cainta%20One%20Express%20Support">Email support</a><a class="btn alt" href="tel:09566753142">Call 0956 675 3142</a></div></section>
+      </section>
+    </main>
+    <script>
+      const search = document.getElementById('support-search');
+      const topics = [...document.querySelectorAll('[data-support-topic]')];
+      const faqs = [...document.querySelectorAll('[data-support-search]')];
+      const count = document.getElementById('support-count');
+      search.addEventListener('input', () => {
+        const query = search.value.trim().toLowerCase();
+        let visible = 0;
+        faqs.forEach((faq) => { const matches = !query || faq.dataset.supportSearch.includes(query); faq.hidden = !matches; if (matches) visible += 1; });
+        topics.forEach((topic) => { topic.hidden = Boolean(query) && !topic.dataset.supportTopic.includes(query); });
+        count.textContent = `${visible} ${visible === 1 ? 'answer' : 'answers'}`;
+      });
+    </script>
+  </body>
+</html>
