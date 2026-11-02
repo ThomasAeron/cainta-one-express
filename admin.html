@@ -76,25 +76,6 @@ dialog input,dialog select,dialog textarea{width:100%;padding:9px 11px;border:1p
 .demo-controls select{max-width:230px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:#fff;font:inherit}
 .demo-controls progress{width:min(180px,100%);height:12px;accent-color:var(--blue)}
 .demo-status{flex-basis:100%;min-height:1.2em;color:var(--muted);font-size:.82rem}
-.admin-chat{position:fixed;right:24px;bottom:24px;z-index:1100}
-.admin-chat[hidden],.admin-chat-panel[hidden],.admin-chat-toggle[hidden]{display:none}
-.admin-chat-panel{position:absolute;right:0;bottom:64px;display:grid;grid-template-rows:auto minmax(0,1fr) auto auto;width:min(390px,calc(100vw - 32px));height:min(560px,calc(100vh - 112px));min-height:300px;overflow:hidden;border:1px solid #d7e3ef;border-radius:18px;background:#fff;box-shadow:0 20px 55px rgba(8,36,90,.24)}
-.admin-chat-header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;background:var(--navy);color:#fff}
-.admin-chat-brand{display:flex;align-items:center;gap:10px}
-.admin-chat-avatar{width:42px;height:42px;flex:0 0 42px;border-radius:50%;object-fit:cover;background:#fff}
-.admin-chat-header h2{font-size:1rem}
-.admin-chat-header p{margin-top:3px;color:rgba(255,255,255,.78);font-size:.76rem}
-.admin-chat-close{border:0;background:transparent;color:#fff;font-size:1.5rem;cursor:pointer}
-.admin-chat-messages{display:flex;flex-direction:column;gap:10px;overflow-y:auto;padding:14px;background:#f5f8fc}
-.admin-chat-message{max-width:90%;margin:0;padding:10px 12px;border:1px solid #e0e9f2;border-radius:14px;border-bottom-left-radius:4px;background:#fff;overflow-wrap:anywhere;font-size:.88rem}
-.admin-chat-message.is-user{align-self:flex-end;border:0;border-bottom-right-radius:4px;background:var(--blue);color:#fff}
-.admin-chat-error{margin:0;padding:0 14px;color:var(--red);font-size:.82rem}
-.admin-chat-form{display:flex;gap:8px;padding:10px 14px 14px}
-.admin-chat-form input{min-width:0;flex:1;padding:10px 12px;border:1px solid #cbd9e6;border-radius:9px;font:inherit}
-.admin-chat .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
-.admin-chat-toggle{min-height:50px;padding:0 18px;border:0;border-radius:999px;background:var(--navy);color:#fff;box-shadow:0 8px 24px rgba(8,36,90,.28);font:inherit;font-weight:700;cursor:pointer}
-.admin-chat button:focus-visible,.admin-chat input:focus-visible{outline:3px solid #ffbf47;outline-offset:3px}
-@media(max-width:480px){.admin-chat{right:16px;bottom:16px}.admin-chat-panel{bottom:62px;height:min(560px,calc(100vh - 94px))}}
 @media(max-width:1000px){.stats{grid-template-columns:repeat(2,1fr)}.two{grid-template-columns:1fr}}
 @media(max-width:900px){.map-layout{grid-template-columns:1fr}.location-list-container{max-height:180px}}
 @media(max-width:700px){
@@ -111,8 +92,6 @@ dialog input,dialog select,dialog textarea{width:100%;padding:9px 11px;border:1p
   .two{gap:12px}
   .operations-map{height:38dvh;min-height:220px}
   .location-list-container{max-height:150px}
-  .admin-chat{right:12px;bottom:82px}
-  .admin-chat-panel{bottom:62px;height:min(560px,calc(100dvh - 160px))}
 }
 </style>
 </head>
@@ -227,29 +206,6 @@ dialog input,dialog select,dialog textarea{width:100%;padding:9px 11px;border:1p
   </form>
 </dialog>
 
-<section class="admin-chat" id="admin-chat" aria-label="Delivery and deals assistant">
-  <div class="admin-chat-panel" id="admin-chat-panel" role="dialog" aria-labelledby="admin-chat-title" hidden>
-    <header class="admin-chat-header">
-      <div class="admin-chat-brand">
-        <img class="admin-chat-avatar" src="/rotom.png" width="42" height="42" alt="">
-        <div>
-        <h2 id="admin-chat-title">Rotom Dex</h2>
-        <p>Delivery &amp; deals assistant · Bzzt!</p>
-        </div>
-      </div>
-      <button type="button" class="admin-chat-close" id="admin-chat-close" aria-label="Close chat">×</button>
-    </header>
-    <div class="admin-chat-messages" id="admin-chat-messages" role="log" aria-live="polite" aria-labelledby="admin-chat-title"></div>
-    <p class="admin-chat-error" id="admin-chat-error" role="status" aria-live="polite"></p>
-    <form class="admin-chat-form" id="admin-chat-form">
-      <label for="admin-chat-input" class="sr-only">Ask about products or delivery</label>
-      <input id="admin-chat-input" type="text" maxlength="240" placeholder="Ask about products or delivery..." autocomplete="off" required>
-      <button class="btn" type="submit">Send</button>
-    </form>
-  </div>
-  <button type="button" class="admin-chat-toggle" id="admin-chat-toggle" aria-expanded="false" aria-controls="admin-chat-panel" hidden>⚡ Ask Rotom Dex</button>
-</section>
-
 <script>
 /* ---- Same session + API conventions as script.js on the website ---- */
 const SESSION_KEY = 'coe-demo-session-v1';
@@ -268,72 +224,6 @@ async function api(path, options = {}) {
   }
   return res.json();
 }
-
-const adminChatPanel = $('admin-chat-panel');
-const adminChatToggle = $('admin-chat-toggle');
-const adminChatInput = $('admin-chat-input');
-const adminChatMessages = $('admin-chat-messages');
-const adminChatError = $('admin-chat-error');
-const adminChatHistory = [];
-function appendAdminChatMessage(message, sender = 'assistant') {
-  const bubble = document.createElement('p');
-  bubble.className = `admin-chat-message${sender === 'user' ? ' is-user' : ''}`;
-  bubble.textContent = message;
-  adminChatMessages.append(bubble);
-  adminChatMessages.scrollTop = adminChatMessages.scrollHeight;
-  return bubble;
-}
-adminChatToggle.addEventListener('click', () => {
-  const opening = adminChatPanel.hidden;
-  adminChatPanel.hidden = !opening;
-  adminChatToggle.setAttribute('aria-expanded', String(opening));
-  if (opening) adminChatInput.focus();
-});
-$('admin-chat-close').addEventListener('click', () => {
-  adminChatPanel.hidden = true;
-  adminChatToggle.setAttribute('aria-expanded', 'false');
-  adminChatToggle.focus();
-});
-appendAdminChatMessage('Bzzt! Rotom Dex is ready to help with products, prices, and delivery questions.');
-$('admin-chat-form').addEventListener('submit', async (event) => {
-  event.preventDefault();
-  const question = adminChatInput.value.trim();
-  if (!question) return;
-  adminChatError.textContent = '';
-  appendAdminChatMessage(question, 'user');
-  adminChatInput.value = '';
-  const submitButton = $('admin-chat-form').querySelector('[type="submit"]');
-  submitButton.disabled = true;
-  const replyBubble = appendAdminChatMessage('Rotom is thinking… zzzt');
-  try {
-    const context = {
-      company: { name: 'Cainta One Express', location: 'Cainta, Rizal', phone: '09566753142', email: 'cainta1express@gmail.com' },
-      items: items.slice(0, 40).map((item) => ({
-        service: item.service || 'Online Bazaar',
-        name: item.name,
-        price: Number(item.price) || null,
-        place: item.merchant || item.seller || item.category || null
-      })),
-      latestDelivery: null
-    };
-    const data = await api('/api/chat', {
-      method: 'POST',
-      body: JSON.stringify({
-        messages: [...adminChatHistory.slice(-10), { role: 'user', content: question }],
-        context
-      })
-    });
-    if (!data?.reply) throw new Error('The assistant returned an empty reply.');
-    replyBubble.textContent = data.reply;
-    adminChatHistory.push({ role: 'user', content: question }, { role: 'assistant', content: data.reply });
-  } catch (error) {
-    replyBubble.remove();
-    adminChatError.textContent = `Could not get a reply: ${error.message}`;
-  } finally {
-    submitButton.disabled = false;
-    adminChatInput.focus();
-  }
-});
 
 let operationsMap = null;
 let operationsMapData = null;
@@ -1003,7 +893,6 @@ $('out').onclick = () => { localStorage.removeItem(SESSION_KEY); location.href =
   $('who').textContent = session.name || session.email;
   $('side').hidden = false;
   $('app').hidden = false;
-  $('admin-chat-toggle').hidden = false;
 
   try {
     await load();
