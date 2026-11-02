@@ -1037,12 +1037,17 @@
         });
         if (!res.ok) return;
         const me = await res.json();
+        console.log('Backend returned this user:', me);
         const userRoles = Array.isArray(me.roles) ? me.roles : [me.roles];
         const stringRoles = userRoles
           .filter((role) => role !== null && role !== undefined)
           .map((role) => String(role).toLowerCase());
         if (stringRoles.includes('admin')) {
-          document.getElementById('nav-admin').hidden = false;
+          const adminButton = document.getElementById('nav-admin');
+          if (adminButton) {
+            adminButton.hidden = false;
+            console.log('Admin button revealed!');
+          }
         }
       } catch (e) { /* silent */ }
     })();
