@@ -27,7 +27,7 @@ paymentsRouter.post('/create-invoice', requireAuth, async (req, res, next) => {
     const shipment = await query(
       `select id, tracking_number
        from public.shipments
-       where id = $1 and created_by = $2 and payment_status <> 'paid'`,
+       where id = $1 and created_by = $2 and coalesce(payment_status, 'unpaid') <> 'paid'`,
       [shipmentId, req.user.id]
     );
     if (shipment.rowCount === 0) {
@@ -75,7 +75,8 @@ paymentsRouter.post('/create-invoice', requireAuth, async (req, res, next) => {
       reference: shipment.rows[0].tracking_number
     });
   } catch (error) {
-    next(error);
+    console.error('Could not create Xendit invoice.', error);
+    res.status(502).json({ error: 'Payment provider could not create the invoice.' });
   }
 });
 
@@ -109,7 +110,7 @@ paymentsRouter.post('/webhook', async (req, res, next) => {
            amount_paid = $1,
            status = 'pending'
        where id = $2
-         and payment_status <> 'paid'
+         and coalesce(payment_status, 'unpaid') <> 'paid'
        returning tracking_number`,
       [event.paid_amount, event.external_id]
     );
