@@ -139,7 +139,7 @@ shipmentsRouter.post('/', requireAuth, async (req, res, next) => {
     );
 
     let deliveryPlan = null;
-    if (b.delivery_kind === 'food') {
+    if (b.delivery_kind === 'food' || b.delivery_kind === 'bazaar') {
       const { rows } = await client.query(
         `select s.created_at,
                 a.lat as destination_lat,
@@ -156,7 +156,11 @@ shipmentsRouter.post('/', requireAuth, async (req, res, next) => {
         shipmentId,
         trackingNumber: tracking,
         customerId: req.user.id,
-        restaurant: b.restaurant,
+        restaurant: b.restaurant || {
+          name: 'Cainta One Warehouse',
+          lat: 14.5785,
+          lon: 121.1130
+        },
         destination: {
           lat: Number(rows[0].destination_lat),
           lon: Number(rows[0].destination_lon)
@@ -164,17 +168,6 @@ shipmentsRouter.post('/', requireAuth, async (req, res, next) => {
         createdAt: new Date(rows[0].created_at),
         itemCount: b.items.reduce((total, item) => total + item.quantity, 0)
       });
-    } else {
-      await client.query(
-        `insert into public.notifications (user_id, kind, title, body, related_id)
-         values ($1, 'order_update', $2, $3, $4)`,
-        [
-          req.user.id,
-          'Order confirmed',
-          `Your order ${tracking} has been created and will be dispatched shortly.`,
-          shipmentId,
-        ]
-      );
     }
 
     await client.query('commit');

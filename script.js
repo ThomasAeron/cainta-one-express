@@ -3520,10 +3520,10 @@ document.addEventListener('DOMContentLoaded', async () => {
           deliveryEta: paid.delivery_eta
         }
       : null;
-    if (deliveryMapElement) deliveryMapElement.hidden = !plan;
-    if (deliveryProgress) deliveryProgress.hidden = !plan;
+    if (deliveryMapElement) deliveryMapElement.hidden = false;
+    if (deliveryProgress) deliveryProgress.hidden = false;
     if (!plan) {
-      if (deliveryEstimateStatus) deliveryEstimateStatus.textContent = 'Payment confirmed. Your Online Bazaar order is queued for processing.';
+      if (deliveryEstimateStatus) deliveryEstimateStatus.textContent = 'Payment confirmed. Your order is queued for processing.';
       return;
     }
 
