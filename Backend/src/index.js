@@ -25,6 +25,17 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.join(__dirname, '..', '..', '.env') });
 
 const app = express();
+app.disable('x-powered-by');
+
+app.use((req, res, next) => {
+  res.set({
+    'X-Content-Type-Options': 'nosniff',
+    'X-Frame-Options': 'DENY',
+    'Referrer-Policy': 'strict-origin-when-cross-origin',
+    'Permissions-Policy': 'camera=(), microphone=(), geolocation=(self)',
+  });
+  next();
+});
 
 const origins = (process.env.CORS_ORIGINS || '')
   .split(',')
@@ -43,11 +54,7 @@ app.get('/api/health', async (req, res) => {
     console.error('HEALTH CHECK FAILED:', err);
     res.status(500).json({
       status: 'error',
-      message: err.message || String(err),
-      code: err.code || null,
-      detail: err.detail || null,
-      hint: err.hint || null,
-      where: err.where || null,
+      message: 'Health check failed',
     });
   }
 });
@@ -87,6 +94,10 @@ const advanceDueDeliveries = async () => {
 };
 
 const startServer = async () => {
+  if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
+    throw new Error('JWT_SECRET must be configured with at least 32 characters.');
+  }
+
   await recalculateActiveSimulatedDeliveries(pool);
   await advanceDueDeliveries();
   app.listen(port, () => {

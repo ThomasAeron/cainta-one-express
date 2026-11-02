@@ -24,6 +24,9 @@ For questions about Cainta One Express (menu items, prices, restaurants, product
  
 // --- tiny in-memory rate limiter (per IP): 20 requests / minute ---
 const hits = new Map();
+const DEFAULT_COHERE_MODEL = 'command-r7b-12-2024';
+const COHERE_TIMEOUT_MS = 30_000;
+
 function rateLimit(req, res, next) {
   const now = Date.now();
   const recent = (hits.get(req.ip) || []).filter((t) => now - t < 60_000);
@@ -34,6 +37,8 @@ function rateLimit(req, res, next) {
 }
  
 chatRouter.post('/', rateLimit, async (req, res) => {
+  const model = process.env.COHERE_MODEL || DEFAULT_COHERE_MODEL;
+
   try {
     if (!process.env.COHERE_API_KEY) {
       return res.status(503).json({ error: 'AI chat is not configured. Add COHERE_API_KEY to .env.' });
@@ -71,11 +76,11 @@ chatRouter.post('/', rateLimit, async (req, res) => {
           authorization: `Bearer ${process.env.COHERE_API_KEY}`
         },
         body: JSON.stringify({
-          model: process.env.COHERE_MODEL || 'command-a-03-2025',
+          model,
           messages: cohereMessages,
-          max_tokens: 500
+          max_tokens: 350
         }),
-        signal: AbortSignal.timeout(30_000)
+        signal: AbortSignal.timeout(COHERE_TIMEOUT_MS)
       });
       if (apiRes.ok || (apiRes.status !== 503 && apiRes.status !== 429)) break;
       if (attempt === 0) await new Promise((resolve) => setTimeout(resolve, 800));
@@ -92,7 +97,7 @@ chatRouter.post('/', rateLimit, async (req, res) => {
         message: typeof providerError?.message === 'string'
           ? providerError.message.slice(0, 300)
           : undefined,
-        model: process.env.COHERE_MODEL || 'command-a-03-2025'
+        model
       });
       return res.status(502).json({ error: 'AI service unavailable.' });
     }
@@ -106,7 +111,15 @@ chatRouter.post('/', rateLimit, async (req, res) => {
     if (!reply) return res.status(502).json({ error: 'AI service returned an empty reply.' });
     res.json({ reply });
   } catch (err) {
-    console.error('chat error', err);
+    if (err?.name === 'TimeoutError' || err?.name === 'AbortError') {
+      console.error('Cohere chat request timed out.', { model, timeoutMs: COHERE_TIMEOUT_MS });
+      return res.status(504).json({ error: 'AI response timed out. Please try again.' });
+    }
+
+    console.error('Cohere chat request failed.', {
+      name: err?.name,
+      message: err?.message
+    });
     res.status(500).json({ error: 'Chat failed.' });
   }
 });

@@ -446,6 +446,33 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   const navLinks = document.querySelectorAll('.nav-menu a');
+  const navToggle = document.getElementById('nav-toggle');
+  const navContainer = navToggle?.closest('.nav');
+  const closeNavigation = () => {
+    navContainer?.classList.remove('is-menu-open');
+    navToggle?.setAttribute('aria-expanded', 'false');
+    navToggle?.setAttribute('aria-label', 'Open navigation menu');
+  };
+
+  navToggle?.addEventListener('click', () => {
+    const opening = !navContainer?.classList.contains('is-menu-open');
+    navContainer?.classList.toggle('is-menu-open', opening);
+    navToggle.setAttribute('aria-expanded', String(opening));
+    navToggle.setAttribute('aria-label', opening ? 'Close navigation menu' : 'Open navigation menu');
+  });
+  navLinks.forEach((link) => link.addEventListener('click', closeNavigation));
+  document.addEventListener('click', (event) => {
+    if (navContainer?.classList.contains('is-menu-open') && !navContainer.contains(event.target)) {
+      closeNavigation();
+    }
+  });
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && navContainer?.classList.contains('is-menu-open')) {
+      closeNavigation();
+      navToggle.focus();
+    }
+  });
+
   const sections = [...document.querySelectorAll('main section[id]')];
 
   const updateActiveNav = () => {
@@ -1928,6 +1955,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (/^(hi|hello|hey|help|start)$/.test(normalized)) {
       return 'Ask me “how long is my delivery?”, “cheapest burger”, or “best deals on shirts”. I can compare current listings and report simulated order status.';
     }
+    if (/\b(what do you do|what services|which services|what can you help|what do you offer)\b/.test(normalized)) {
+      return 'Cainta One Express lets you browse local restaurant menus with Food Express, shop products from local sellers in Online Bazaar, and submit delivery requests in Cainta. Food Express delivery milestones and rider movement are simulated, not live GPS.';
+    }
     if (/\b(delivery|deliver|arrive|arrival|order|package|tracking|eta)\b/.test(normalized)) {
       if (latestDelivery) {
         return latestDelivery.delivered
@@ -2081,7 +2111,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         reply = await askAssistantAI(question);
       } catch (error) {
         console.warn('AI chat unavailable, using built-in answers.', error);
-        reply = rotomify(answerChatQuestion(question));
+        const fallback = answerChatQuestion(question);
+        const reason = error.status === 504
+          ? 'The AI reply timed out, so here is what I can answer from the local catalog:'
+          : error.status === 503
+            ? 'The AI service is not configured, so here is what I can answer from the local catalog:'
+          : 'The AI service is unavailable, so here is what I can answer from the local catalog:';
+        reply = `${reason} ${fallback}`;
       }
     }
     if (bubble) bubble.textContent = reply;

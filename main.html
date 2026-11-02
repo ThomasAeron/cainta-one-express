@@ -3,12 +3,12 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Cainta One Express</title>
+    <title>Cainta One Express | Local Ordering in Cainta</title>
     <meta
       name="description"
-      content="Cainta One Express offers fast Food Delivery, Clothing Delivery, and Moving services in Cainta, Rizal."
+      content="Order from local restaurant menus or browse products from local sellers in Cainta, Rizal. View approximate delivery estimates before you submit an order request."
     />
-    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <link rel="icon" type="image/png" href="delivery-icon.png" />
     <link rel="stylesheet" href="style.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
@@ -68,17 +68,31 @@
       <div class="container nav">
         <a href="#home" class="logo" aria-label="Cainta One Express home">
           <span class="logo-mark" aria-hidden="true">
-            <img src="favicon.svg" alt="" width="46" height="46" />
+            <img src="delivery-icon.png" alt="" width="46" height="46" />
           </span>
           <span>Cainta One Express</span>
         </a>
 
-        <nav class="nav-menu" aria-label="Main navigation">
+        <nav class="nav-menu" id="main-navigation" aria-label="Main navigation">
           <a href="#home">Home</a>
           <a href="#services">Services</a>
           <a href="#about">About</a>
           <a href="#process">Process</a>
+          <a href="#contact">Contact</a>
         </nav>
+
+        <button
+          type="button"
+          class="nav-toggle"
+          id="nav-toggle"
+          aria-label="Open navigation menu"
+          aria-expanded="false"
+          aria-controls="main-navigation"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
 
         <div class="nav-actions">
           <a href="account.html" class="nav-cta" id="nav-sign-in">Sign In</a>
@@ -116,38 +130,27 @@
       <section class="hero" id="home">
         <div class="container hero-grid">
           <div>
-            <span class="eyebrow">Local favorites, delivered</span>
-            <h1>Your Cainta favorites, delivered to your door.</h1>
+            <span class="eyebrow">Local ordering, made simpler</span>
+            <h1>Local food delivery and shopping, made simple.</h1>
             <p>
-              Order from local restaurants or shop independent sellers around Cainta,
-              then arrange delivery in one place.
+              Order from local restaurant menus or browse products from local sellers. Add
+              your Cainta delivery details, review an approximate route estimate, and send
+              your order request. Online payment is not available.
             </p>
 
             <div class="hero-actions">
-              <button type="button" class="btn btn-primary sell-trigger" data-service="Food Express">Order Food</button>
-              <button type="button" class="btn btn-secondary sell-trigger" data-service="Online Bazaar">Shop Local</button>
-              <a href="#services" class="btn btn-secondary">Our Services</a>
+              <a href="#services" class="btn btn-secondary">Browse Services</a>
             </div>
 
-            <div class="hero-metrics">
-              <div class="metric">
-                <strong>67K+</strong>
-                <span>Shipments delivered</span>
-              </div>
-              <div class="metric">
-                <strong>96%</strong>
-                <span>On-time performance</span>
-              </div>
-              <div class="metric">
-                <strong>24/7</strong>
-                <span>Operations support</span>
-              </div>
+            <div class="hero-metrics" aria-label="Available services">
+              <div class="metric"><strong>2</strong><span>Ways to shop locally</span></div>
+              <div class="metric"><strong>5</strong><span>Supported Cainta areas</span></div>
+              <div class="metric"><strong>No</strong><span>Online payments collected</span></div>
             </div>
           </div>
 
           <div class="hero-visual" aria-label="Express delivery illustration">
             <svg class="scene" viewBox="0 0 540 460" role="img" aria-label="Delivery truck, courier and app illustration">
-              <!-- tablet / app -->
               <g class="tablet">
                 <rect x="268" y="14" width="214" height="270" rx="20" fill="#fff" opacity=".96"/>
                 <g fill="#7b61d9">
@@ -161,20 +164,12 @@
                 <rect x="404" y="150" width="46" height="46" rx="9" fill="#7b61d9"/>
                 <rect x="292" y="212" width="158" height="46" rx="10" fill="#efe9ff"/>
               </g>
-
-              <!-- floating parcels -->
               <g class="parcel p1"><rect x="424" y="236" width="64" height="46" rx="6" fill="#f7b44f"/><path d="M456 236v46M424 258h64" stroke="#e08f1f" stroke-width="3"/></g>
               <g class="parcel p2"><rect x="448" y="320" width="62" height="44" rx="6" fill="#8a6ff0"/><path d="M479 320v44" stroke="#5e44c8" stroke-width="3"/></g>
-
-              <!-- ground -->
               <path d="M0 392H540" stroke="rgba(255,255,255,.75)" stroke-width="2"/>
-
-              <!-- truck -->
               <g class="truck">
-                <rect x="70" y="190" width="190" height="150" rx="12" fill="#f7a24a"/>
-                <g transform="rotate(-10 150 255)" fill="#fff" font-family="Arial, Helvetica, sans-serif" font-weight="900" font-size="30" letter-spacing="1">
-                  <text x="86" y="262">EXPRESS</text>
-                </g>
+                <rect x="70" y="190" width="190" height="150" rx="12" fill="#147de5"/>
+                <g transform="rotate(-10 165 255)" fill="#fff" font-family="Arial, Helvetica, sans-serif" font-weight="900" font-size="16" letter-spacing=".2"><text x="165" y="262" text-anchor="middle">CAINTA ONE</text></g>
                 <path d="M92 300h92M92 314h64" stroke="rgba(255,255,255,.7)" stroke-width="3" stroke-linecap="round"/>
                 <path d="M12 300 Q12 262 44 252 L70 252 V340 H12 Z" fill="#8a6ff0"/>
                 <path d="M30 266 Q32 262 42 262 L58 262 V296 H28 Z" fill="#dfeaff"/>
@@ -183,8 +178,6 @@
                 <g class="wheel"><circle cx="206" cy="352" r="24" fill="#27386b"/><circle cx="206" cy="352" r="11" fill="#cfd8f5"/><path d="M206 341v22M195 352h22" stroke="#27386b" stroke-width="3"/></g>
               </g>
               <g class="speed" stroke="rgba(255,255,255,.7)" stroke-width="3" stroke-linecap="round"><path d="M-6 280h-28M-6 300h-40M-6 320h-22"/></g>
-
-              <!-- courier with pallet jack -->
               <g class="courier">
                 <circle cx="340" cy="226" r="13" fill="#f3b790"/>
                 <path d="M326 222 Q340 206 354 222 Q344 214 326 222Z" fill="#27386b"/>
@@ -203,14 +196,16 @@
 
       <section class="section" id="services">
         <div class="container">
-          <div class="section-head">
-            <span class="eyebrow">What we do</span>
-            <h2>Integrated solutions that move your business forward.</h2>
-            <p>
-              From sourcing and storage to distribution and monitoring, we design logistics
-              strategies that reduce delays, cut costs, and improve visibility.
-            </p>
-          </div>
+          <div class="services-content">
+            <div class="section-head">
+              <span class="eyebrow">What we do</span>
+              <h2>Choose how you<br />want to shop<br /><span>local.</span></h2>
+              <p>
+                Browse restaurant menus with listed prices, or compare products submitted by
+                local sellers. Delivery estimates are approximate and payment is handled
+                outside this website.
+              </p>
+            </div>
 
           <div class="services-grid">
             <article class="service-card sell-card">
@@ -242,7 +237,12 @@
               <p>
                 Choose a restaurant, browse its menu, and view delivery progress in Cainta.
               </p>
-              <button type="button" class="sell-trigger" data-service="Food Express">Browse Restaurants</button>
+              <button type="button" class="sell-trigger" data-service="Food Express">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M7 3v7M10 3v7M7 7h3M8.5 10v11M16 3v18M16 3c2.2 2 3 4.1 3 6.5V12h-3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <span>Browse Restaurants</span>
+              </button>
             </article>
 
             <article class="service-card sell-card">
@@ -273,51 +273,132 @@
               <p>
                 Search a product, compare offers from different sellers, and request delivery to your door.
               </p>
-              <button type="button" class="sell-trigger" data-service="Online Bazaar">Shop Products</button>
-              <button type="button" class="sell-trigger bazaar-list-trigger" data-open-bazaar-shop>Make a Shop</button>
+              <button type="button" class="sell-trigger" data-service="Online Bazaar">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M6 8h12l1 12H5L6 8ZM9 8V6a3 3 0 0 1 6 0v2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <span>Shop Products</span>
+              </button>
+              <button type="button" class="sell-trigger bazaar-list-trigger" data-open-bazaar-shop>
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="m3 12 9-9h7l2 2v7l-9 9L3 12Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                  <circle cx="16" cy="7" r="1.2" fill="currentColor"/>
+                </svg>
+                <span>Create a Shop</span>
+              </button>
+              <button type="button" class="sell-trigger bazaar-list-trigger bazaar-add-product-trigger" data-open-bazaar-shop>
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M6 8h12l1 12H5L6 8ZM9 8V6a3 3 0 0 1 6 0v2M12 12v5M9.5 14.5h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <span>Add a Product</span>
+              </button>
             </article>
 
           </div>
+          </div>
+          <img
+            class="services-scooter"
+            src="images/cainta-scooter-scene.png"
+            alt="A delivery courier riding a blue scooter through Cainta"
+            width="539"
+            height="252"
+            loading="lazy"
+          />
         </div>
       </section>
 
+      <section class="section showcase-section" id="local-favorites">
+        <div class="container">
+          <div class="section-head">
+            <span class="eyebrow">Made for Cainta</span>
+            <h2>Good food and great finds, just a few taps away.</h2>
+            <p>Explore local menus, shop seller listings, and send your order request in one simple place.</p>
+          </div>
+
+          <div class="showcase-grid">
+            <article class="showcase-order-card">
+              <span class="showcase-kicker">Your next order, simplified</span>
+              <h3>How to order</h3>
+              <ol class="showcase-steps">
+                <li><span>01</span><div><strong>Choose</strong><small>Pick Food Express or Online Bazaar.</small></div></li>
+                <li><span>02</span><div><strong>Browse</strong><small>Choose a restaurant or compare seller listings.</small></div></li>
+                <li><span>03</span><div><strong>Request</strong><small>Add your Cainta address and send your order.</small></div></li>
+              </ol>
+              <button type="button" class="btn sell-trigger showcase-order-button" data-service="Food Express">Start a food order</button>
+              <img class="showcase-scooter" src="delivery-icon.png" alt="" width="90" height="90" loading="lazy" />
+            </article>
+
+            <article class="showcase-image-card showcase-food-card">
+              <img
+                src="images/Kainin_mo_to/photo-1513104890138-7c749659a591.png"
+                alt="Freshly baked pizza ready to share"
+                loading="lazy"
+                width="640"
+                height="640"
+              />
+              <div class="showcase-image-caption">
+                <span>FOOD EXPRESS</span>
+                <h3>Find your next favorite meal.</h3>
+                <button type="button" class="sell-trigger showcase-link-button" data-service="Food Express">Browse restaurants <span aria-hidden="true">→</span></button>
+              </div>
+            </article>
+
+            <article class="showcase-image-card showcase-style-card">
+              <img
+                src="images/women_cloths/photo-1496747611176-843222e1e57c.png"
+                alt="Red dress from the local fashion collection"
+                loading="lazy"
+                width="640"
+                height="640"
+              />
+              <div class="showcase-image-caption">
+                <span>ONLINE BAZAAR</span>
+                <h3>Shop something that feels like you.</h3>
+                <button type="button" class="sell-trigger showcase-link-button" data-service="Online Bazaar">Explore the bazaar <span aria-hidden="true">→</span></button>
+              </div>
+            </article>
+          </div>
+          <p class="showcase-note">Product images are examples. Seller listings and availability may vary.</p>
+        </div>
+      </section>
       <section class="section" id="about">
         <div class="container feature-wrap">
           <div class="feature-panel">
-            <h3>Built for resilience, speed, and control.</h3>
+            <h3>Know what to expect before you order.</h3>
             <ul class="feature-list">
-              <li>Local logistics support across Cainta, Rizal and nearby communities.</li>
-              <li>Responsive operations team with proactive issue tracking and reporting.</li>
-              <li>Custom supply chain planning tailored to your business model and demand cycles.</li>
-              <li>Data-driven forecasting that improves inventory flow and service reliability.</li>
+              <li>Choose a restaurant and add menu items to one food order.</li>
+              <li>Browse product listings from local sellers.</li>
+              <li>Choose from five supported Cainta delivery areas.</li>
+              <li>Review approximate route estimates before submitting your request.</li>
+              <li>Submit an order request without entering card details.</li>
             </ul>
           </div>
 
           <div>
             <div class="section-head" style="margin-bottom: 18px;">
               <span class="eyebrow">Why choose us</span>
-              <h2>Dependable logistics support across every stage.</h2>
+              <h2>Your Cainta favorites, all in one place.</h2>
             </div>
 
             <div class="stats-box">
               <div class="stat-card">
-                <strong>98.6%</strong>
-                <p>Customer satisfaction rate</p>
+                <strong>Restaurants</strong>
+                <p>Menus with listed prices</p>
               </div>
 
               <div class="stat-card">
-                <strong>35%</strong>
-                <p>Average cost reduction</p>
+                <strong>Products</strong>
+                <p>Listings from local sellers</p>
               </div>
 
               <div class="stat-card">
-                <strong>20+</strong>
-                <p>Partner networks</p>
+                <strong>5 areas</strong>
+                <p>Cainta delivery area choices</p>
               </div>
 
               <div class="stat-card">
-                <strong>1 yr</strong>
-                <p>Industry expertise</p>
+                <strong>No online payment</strong>
+                <p>Submit an order request without card details</p>
               </div>
             </div>
           </div>
@@ -328,32 +409,32 @@
         <div class="container">
           <div class="section-head">
             <span class="eyebrow">How it works</span>
-            <h2>Simple process. Strong performance.</h2>
+            <h2>From browsing to order request in four steps.</h2>
           </div>
 
           <div class="process-grid">
             <div class="process-step">
               <div class="step-number">1</div>
-              <h3>Assess</h3>
-              <p>We review your supply chain goals, volume, and delivery demands.</p>
+              <h3>Choose</h3>
+              <p>Open Food Express for restaurant menus or Online Bazaar for product listings.</p>
             </div>
 
             <div class="process-step">
               <div class="step-number">2</div>
-              <h3>Plan</h3>
-              <p>We build a tailored logistics model to optimize routes and inventory flow.</p>
+              <h3>Browse</h3>
+              <p>Select a restaurant and menu items, or compare products and sellers.</p>
             </div>
 
             <div class="process-step">
               <div class="step-number">3</div>
-              <h3>Execute</h3>
-              <p>Our team handles warehousing, transport, fulfillment, and tracking.</p>
+              <h3>Add details</h3>
+              <p>Choose your Cainta area, enter your delivery address, and provide contact details.</p>
             </div>
 
             <div class="process-step">
               <div class="step-number">4</div>
-              <h3>Improve</h3>
-              <p>We monitor performance and refine operations for ongoing efficiency gains.</p>
+              <h3>Submit</h3>
+              <p>Review the order and approximate delivery estimate, then send your request.</p>
             </div>
           </div>
         </div>
@@ -363,10 +444,10 @@
         <div class="container">
           <div class="cta">
             <div>
-              <h3>Need a supply chain partner you can trust?</h3>
-              <p>Let’s build a logistics strategy that keeps your business moving.</p>
+              <h3>Questions about placing an order?</h3>
+              <p>Contact us by email. This website does not process online payments.</p>
             </div>
-            <a href="mailto:cainta1express@gmail.com" class="btn btn-primary">Contact Us</a>
+            <a href="mailto:cainta1express@gmail.com" class="btn btn-primary">Get in touch</a>
           </div>
         </div>
       </section>
@@ -378,12 +459,12 @@
           <div>
             <a href="#home" class="logo" aria-label="Cainta One Express home">
               <span class="logo-mark" aria-hidden="true">
-                <img src="favicon.svg" alt="" width="46" height="46" />
+                <img src="delivery-icon.png" alt="" width="46" height="46" />
               </span>
               <span style="color: white;">Cainta One Express</span>
             </a>
             <p style="margin-top: 14px; max-width: 260px;">
-              Smart logistics solutions for supply, warehousing, transportation, and fulfillment.
+              Local food and shopping deliveries for Cainta and nearby communities.
             </p>
           </div>
 
@@ -601,7 +682,7 @@
       <div class="sell-modal-backdrop" data-close-bazaar-shop></div>
       <div class="sell-modal-dialog bazaar-shop-dialog" role="dialog" aria-modal="true" aria-labelledby="bazaar-shop-title">
         <button type="button" class="sell-modal-close" aria-label="Close shop manager" data-close-bazaar-shop>×</button>
-        <h3 id="bazaar-shop-title">Make a Shop</h3>
+        <h3 id="bazaar-shop-title">Create a Shop</h3>
         <p>Set up your shop, then add products with photos and details customers can view in Online Bazaar.</p>
         <div id="bazaar-shop-auth-message" class="listing-message is-error" role="status" hidden>
           Sign in to create or manage your shop. <a href="account.html">Go to sign in</a>.
