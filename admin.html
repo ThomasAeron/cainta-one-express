@@ -910,6 +910,7 @@ $('out').onclick = () => { localStorage.removeItem(SESSION_KEY); location.href =
   }
 
   // Check role. Only admin can enter the admin panel.
+  console.log('USER DATA FROM BACKEND:', me);
   const userRoles = Array.isArray(me.roles) ? me.roles : [me.roles];
   const stringRoles = userRoles
     .filter((role) => role !== null && role !== undefined)
