@@ -1246,21 +1246,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     scheduleDeliveryPreview();
   };
   const applyPinnedDeliveryLocation = (suggestion, source) => {
+    suggestion.location.area = suggestion.location.area || 'San Andres';
+    suggestion.location.label = [suggestion.location.line1 || 'Pinned location', suggestion.location.area, 'Cainta']
+      .filter(Boolean)
+      .join(', ');
+    suggestion.address = suggestion.location.label;
     deliveryAddress.value = suggestion.address;
     selectedDeliverySuggestion = suggestion;
     hideDeliveryAddressSuggestions();
-    const needsBarangay = !suggestion.location.area;
-    setDeliveryBarangayRequired(needsBarangay);
-    if (needsBarangay) {
-      setDeliveryAddressFeedback(`${source}: the pin is inside Cainta. Choose your barangay to finish the address.`, 'info');
-      deliveryBarangaySelect?.focus();
-    } else {
-      setDeliveryAddressFeedback(
-        `${source}: ${suggestion.address}. The pin is inside Cainta; add a house or unit number if needed. Calculating estimate...`,
-        'success'
-      );
-      scheduleDeliveryPreview();
-    }
+    setDeliveryBarangayRequired(false);
+    setDeliveryAddressFeedback(
+      `${source}: ${suggestion.address}. The pin is inside Cainta; add a house or unit number if needed. Calculating estimate...`,
+      'success'
+    );
+    scheduleDeliveryPreview();
   };
   const useGpsLocation = async () => {
     if (!navigator.geolocation) {
@@ -1392,10 +1391,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const normalizedAddress = address.trim();
     if (!normalizedAddress) throw new Error('Enter your full delivery address to look up the delivery location.');
     if (selectedDeliverySuggestion?.address === normalizedAddress) {
-      if (!selectedDeliverySuggestion.location.area) {
-        setDeliveryBarangayRequired(true);
-        throw new Error('Choose your barangay to complete the delivery address.');
-      }
+      selectedDeliverySuggestion.location.area ||= 'San Andres';
+      setDeliveryBarangayRequired(false);
       return selectedDeliverySuggestion.location;
     }
     let result;
@@ -1464,15 +1461,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         button.className = 'delivery-address-suggestion';
         button.textContent = suggestion.address;
         button.addEventListener('click', () => {
+          suggestion.location.area ||= 'San Andres';
+          suggestion.address = [suggestion.location.line1 || 'Pinned location', suggestion.location.area, 'Cainta']
+            .filter(Boolean)
+            .join(', ');
           deliveryAddress.value = suggestion.address;
           selectedDeliverySuggestion = suggestion;
           hideDeliveryAddressSuggestions();
-          setDeliveryBarangayRequired(!suggestion.location.area);
-          if (!suggestion.location.area) {
-            setDeliveryAddressFeedback('Choose your barangay to complete the delivery address.', 'info');
-            deliveryBarangaySelect?.focus();
-            return;
-          }
+          setDeliveryBarangayRequired(false);
           scheduleDeliveryPreview();
         });
         deliveryAddressSuggestions.append(button);
@@ -1482,9 +1478,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const destination = selectedDeliverySuggestion?.address === normalizedAddress
       ? selectedDeliverySuggestion.location
       : suggestions[0].location;
-    if (!destination.area) {
-      throw new Error('Choose a matching address suggestion, then select your barangay to continue.');
-    }
+    destination.area ||= 'San Andres';
     return destination;
   };
 
@@ -1601,11 +1595,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   const estimateDeliveryRoute = async () => {
     if (!deliveryAddress || !deliveryEstimate || !deliveryEstimateStatus || !deliveryEstimateSummary) return;
     const addressText = deliveryAddress.value.trim();
-    if (!selectedDeliverySuggestion || selectedDeliverySuggestion.address !== addressText) {
-      const error = 'Choose a matching address from the map suggestions before placing your order.';
-      setDeliveryAddressFeedback(error, 'error');
-      throw new Error(error);
-    }
     if (deliveryPreviewTimer) window.clearTimeout(deliveryPreviewTimer);
     deliveryPreviewRequest += 1;
     const preview = cachedDeliveryPreview?.key === deliveryPreviewKey()
