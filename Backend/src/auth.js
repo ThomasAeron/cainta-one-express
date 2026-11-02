@@ -43,8 +43,9 @@ export async function requireAuth(req, res, next) {
 
   try {
     const { rows } = await query(
-      `select u.id, u.email, u.full_name, u.is_active, r.name as role_name
-       from users u
+      `select u.id, u.email, u.full_name, u.is_active,
+              coalesce(r.name, case when u.role_id = 1 then 'admin' end) as role_name
+       from users u 
        left join roles r on r.id = u.role_id
        where u.id = $1`,
       [payload.sub]
