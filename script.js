@@ -1398,11 +1398,29 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
       return selectedDeliverySuggestion.location;
     }
-    const result = await api('/api/location/lookup', {
-      method: 'POST',
-      body: JSON.stringify({ address: normalizedAddress }),
-      signal: AbortSignal.timeout(12000)
-    });
+    let result;
+    try {
+      result = await api('/api/location/lookup', {
+        method: 'POST',
+        body: JSON.stringify({ address: normalizedAddress }),
+        signal: AbortSignal.timeout(12000)
+      });
+    } catch (error) {
+      if (![502, 504].includes(error.status)) throw error;
+      const fallbackArea = getDeliveryBarangay({}, normalizedAddress) || 'San Andres';
+      const fallbackLocation = {
+        lat: 14.5785,
+        lon: 121.1130,
+        label: `${normalizedAddress}, Cainta`,
+        area: fallbackArea,
+        line1: normalizedAddress
+      };
+      setDeliveryAddressFeedback(
+        'Address lookup is temporarily unavailable. Using an approximate Cainta location for payment; delivery routing may be approximate.',
+        'info'
+      );
+      return fallbackLocation;
+    }
     const matches = (result.features || []).filter((feature) => {
       const [lon, lat] = feature.geometry?.coordinates || [];
       const properties = feature.properties || {};
@@ -1573,17 +1591,6 @@ document.addEventListener('DOMContentLoaded', async () => {
           assumedAverageSpeedKmh: deliverySettings.assumedAverageSpeedKmh
         };
         setDeliveryAddressFeedback(`Estimated travel time: ${formatDeliveryDuration(preview.estimatedSeconds)} · ${preview.summary}. This is an estimate, not a live ETA.`, 'success');
-        if (sellServiceField?.value === 'Online Bazaar' && bazaarCheckoutStarted) {
-          if (deliveryEstimate) deliveryEstimate.hidden = false;
-          if (deliveryEstimateTitle) deliveryEstimateTitle.textContent = 'Delivery route preview';
-          if (deliveryEstimateSummary) {
-            deliveryEstimateSummary.textContent = `To ${preview.destination.label}, Cainta · ${preview.summary}`;
-          }
-          if (deliveryEstimateStatus) {
-            deliveryEstimateStatus.textContent = 'Review the map and address, then continue to secure payment.';
-          }
-          drawDeliveryMap(preview.destination, preview.pickup, preview.route?.geometry);
-        }
       } catch (error) {
         if (requestId !== deliveryPreviewRequest) return;
         setDeliveryAddressFeedback(error.message, 'error');
