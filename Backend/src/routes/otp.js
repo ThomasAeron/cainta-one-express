@@ -16,40 +16,51 @@ otpRouter.post('/send', async (req, res, next) => {
       return res.status(400).json({ error: 'This email is already registered.' });
     }
 
+    if (!process.env.SENDGRID_API_KEY) {
+      return res.status(503).json({ error: 'Email verification is not configured.' });
+    }
+
     // 2. Generate OTP
     const code = randomInt(100000, 1000000).toString();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
 
-    // 3. Save to database
+    // 3. Send email via SendGrid
+    const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.SENDGRID_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        personalizations: [{ to: [{ email: lowerEmail }] }],
+        from: { 
+          email: 'thomasaeronbonavente@gmail.com', // MUST MATCH YOUR VERIFIED GMAIL
+          name: 'Cainta One Express' 
+        },
+        subject: 'Your Cainta One Express verification code',
+        content: [
+          {
+            type: 'text/plain',
+            value: `Your verification code is: ${code}\n\nThis code expires in 10 minutes. If you didn't request this, ignore this email.`
+          }
+        ]
+      }),
+      signal: AbortSignal.timeout(15_000)
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('SendGrid request failed.', { status: response.status, error: errorText });
+      throw new Error('Failed to send verification email.');
+    }
+
+    // 4. Save the OTP only after SendGrid accepts the email.
     await query(
       `insert into public.notifications (user_id, kind, title, body, related_id)
        values (null, 'system', $1, $2, null)`,
       [`OTP for ${lowerEmail}: ${code}`, `Expires at ${expiresAt}`]
     );
 
-    // 4. Send email via Google Apps Script
-    const scriptUrl = 'https://script.google.com/macros/s/AKfycbyEyoXYUd9BkEVpcTBqyt2gNtpI1oOMMrSp5EICly5Ez8Vu_4kbmDe7bde0ANEli-6E/exec';
-    
-    const response = await fetch(scriptUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        token: process.env.GMAIL_SCRIPT_TOKEN, // The secret token from Render
-        to: lowerEmail,
-        subject: 'Your Cainta One Express verification code',
-        body: `Your verification code is: ${code}\n\nThis code expires in 10 minutes. If you didn't request this, ignore this email.`
-      })
-    });
-
-    if (!response.ok) {
-      const errorBody = await response.text();
-      console.error('Google Script Error:', errorBody);
-      throw new Error('Failed to send verification email.');
-    }
-
-    console.log(`OTP sent to ${lowerEmail} via Google Apps Script`);
     res.json({ message: 'Verification code sent to email.' });
   } catch (err) {
     next(err);
