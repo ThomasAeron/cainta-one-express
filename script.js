@@ -3498,6 +3498,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (selectedRestaurantPanel) selectedRestaurantPanel.hidden = true;
     sellForm.hidden = true;
     if (sellTitle) sellTitle.textContent = 'Delivery Tracking';
+    if (sellSubtitle) sellSubtitle.textContent = 'Your order has been confirmed and is being processed.';
     if (orderAuthPrompt) orderAuthPrompt.hidden = true;
     if (deliveryEstimate) deliveryEstimate.hidden = false;
     if (deliveryEstimateTitle) deliveryEstimateTitle.textContent = 'Your delivery is on the way';
