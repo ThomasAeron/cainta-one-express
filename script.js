@@ -622,6 +622,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const deliveryEstimateSummary = document.getElementById('delivery-estimate-summary');
   const deliveryEstimateStatus = document.getElementById('delivery-estimate-status');
   const deliveryAddressPreview = document.getElementById('delivery-address-preview');
+  const deliveryMap = document.getElementById('delivery-map');
   const deliveryBarangayField = document.getElementById('delivery-barangay-field');
   const deliveryBarangaySelect = document.getElementById('delivery-barangay');
   const setDeliveryAddressFeedback = (message, state = 'info') => {
@@ -3519,6 +3520,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           deliveryEta: paid.delivery_eta
         }
       : null;
+    if (deliveryMap) deliveryMap.hidden = !plan;
     if (!plan) {
       if (deliveryEstimateStatus) deliveryEstimateStatus.textContent = 'Payment confirmed. Your Online Bazaar order is queued for processing.';
       return;
