@@ -130,11 +130,11 @@ shipmentsRouter.post('/', requireAuth, async (req, res, next) => {
     // (The stored procedure doesn't know about these columns yet.)
     await client.query(
       `update public.shipments
-       set payment_method = $1,
-           amount_paid = $2,
-           payment_status = case when $1 = 'xendit' then 'unpaid' else payment_status end,
-           status = case when $1 = 'xendit' then 'pending_payment' else status end
-       where id = $3`,
+       set payment_method = $1::varchar,
+           amount_paid = $2::numeric,
+           payment_status = case when $1::varchar = 'xendit' then 'unpaid' else payment_status end,
+           status = case when $1::varchar = 'xendit' then 'pending_payment' else status end
+       where id = $3::uuid`,
       [b.payment_method, b.amount_paid, shipmentId]
     );
 
