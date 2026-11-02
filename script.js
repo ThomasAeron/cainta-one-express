@@ -3494,7 +3494,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     sellModal?.classList.add('open');
     sellModal?.setAttribute('aria-hidden', 'false');
     document.body.classList.add('modal-open');
+    if (restaurantPicker) restaurantPicker.hidden = true;
+    if (selectedRestaurantPanel) selectedRestaurantPanel.hidden = true;
     sellForm.hidden = true;
+    if (sellTitle) sellTitle.textContent = 'Delivery Tracking';
     if (orderAuthPrompt) orderAuthPrompt.hidden = true;
     if (deliveryEstimate) deliveryEstimate.hidden = false;
     if (deliveryEstimateTitle) deliveryEstimateTitle.textContent = 'Your delivery is on the way';
