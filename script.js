@@ -3521,6 +3521,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
       : null;
     if (deliveryMapElement) deliveryMapElement.hidden = !plan;
+    if (deliveryProgress) deliveryProgress.hidden = !plan;
     if (!plan) {
       if (deliveryEstimateStatus) deliveryEstimateStatus.textContent = 'Payment confirmed. Your Online Bazaar order is queued for processing.';
       return;
